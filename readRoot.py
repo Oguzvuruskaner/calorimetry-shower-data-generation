@@ -8,15 +8,20 @@ def create_npy_files(path:str):
 
     root = uproot.open(path)
 
-    hit_e = root[b"showers;14"][b"hit_e"].array()._content
-    hit_x = root[b"showers;14"][b"hit_x"].array()._content
-    hit_y = root[b"showers;14"][b"hit_y"].array()._content
-    hit_z = root[b"showers;14"][b"hit_z"].array()._content
+    rootDirectories = [b"showers;14",b"showers;15",b"showers"]
 
-    np.append(hit_e,root[b"showers;15"][b"hit_e"].array()._content)
-    np.append(hit_x,root[b"showers;15"][b"hit_x"].array()._content)
-    np.append(hit_y,root[b"showers;15"][b"hit_y"].array()._content)
-    np.append(hit_z,root[b"showers;15"][b"hit_z"].array()._content)
+    hit_e = np.array([])
+    hit_x = np.array([])
+    hit_y = np.array([])
+    hit_z = np.array([])
+
+    for directory in rootDirectories:
+
+        hit_e = np.append(hit_e,np.array(root[directory][b"hit_e"].array()))
+        hit_x = np.append(hit_x,np.array(root[directory][b"hit_x"].array()))
+        hit_y = np.append(hit_y,np.array(root[directory][b"hit_y"].array()))
+        hit_z = np.append(hit_z,np.array(root[directory][b"hit_z"].array()))
+
 
     np.save("hit_e.npy",hit_e)
     np.save("hit_x.npy",hit_x)
