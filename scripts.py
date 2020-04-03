@@ -7,7 +7,7 @@ def loadAndSplitArray(filepath:str,number_of_chunks):
     pattern = re.compile(r"(.*?)\.npy")
 
     data = np.load(filepath)
-    chunks = np.split(data,number_of_chunks)
+    chunks = np.array_split(data,number_of_chunks)
 
     rootFilepath = re.findall(pattern,filepath)[0]
 
