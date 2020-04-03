@@ -2,25 +2,24 @@ import uproot
 import numpy as np
 
 # __ROOT_DIRECTORIES__ = [b"showers;14", b"showers;15", b"showers"]
-__ROOT_DIRECTORIES__ = [ b"showers"]
+__ROOT_DIRECTORY__ =  b"showers"
 
 
-def create_npy_files(path:str):
-
-    root = uproot.open(path)
-
+def create_npy_files(pathList:str):
 
     hit_e = np.array([])
     hit_x = np.array([])
     hit_y = np.array([])
     hit_z = np.array([])
 
-    for directory in __ROOT_DIRECTORIES__:
+    for rootFile in pathList:
 
-        hit_e = np.append(hit_e,np.array(root[directory][b"hit_e"].array()))
-        hit_x = np.append(hit_x,np.array(root[directory][b"hit_x"].array()))
-        hit_y = np.append(hit_y,np.array(root[directory][b"hit_y"].array()))
-        hit_z = np.append(hit_z,np.array(root[directory][b"hit_z"].array()))
+        with uproot.open(rootFile) as root:
+
+            hit_e = np.append(hit_e,np.array(root[__ROOT_DIRECTORY__][b"hit_e"].array()))
+            hit_x = np.append(hit_x,np.array(root[__ROOT_DIRECTORY__][b"hit_x"].array()))
+            hit_y = np.append(hit_y,np.array(root[__ROOT_DIRECTORY__][b"hit_y"].array()))
+            hit_z = np.append(hit_z,np.array(root[__ROOT_DIRECTORY__][b"hit_z"].array()))
 
 
     np.save("hit_e.npy",hit_e)
@@ -30,7 +29,7 @@ def create_npy_files(path:str):
 
 
 
-def create_quadruple_array_file(path:str):
+def create_quadruple_array_file(pathList:list):
 
     """
     :param :path
@@ -41,21 +40,28 @@ def create_quadruple_array_file(path:str):
     and writes them to a file.
 
     """
-    root = uproot.open(path)
 
     quadruple_array = np.array([])
 
-    for directory in __ROOT_DIRECTORIES__:
+    for rootFile in pathList:
 
-        hit_x = np.array(root[directory][b"hit_x"].array())
-        hit_y = np.array(root[directory][b"hit_y"].array())
-        hit_z = np.array(root[directory][b"hit_z"].array())
-        hit_e = np.array(root[directory][b"hit_e"].array())
+        tmp = []
 
-        tmp = np.ndarray([])
+        with uproot.open(rootFile) as root:
+            hit_x = np.array(root[__ROOT_DIRECTORY__][b"hit_x"].array())
+            hit_y = np.array(root[__ROOT_DIRECTORY__][b"hit_y"].array())
+            hit_z = np.array(root[__ROOT_DIRECTORY__][b"hit_z"].array())
+            hit_e = np.array(root[__ROOT_DIRECTORY__][b"hit_e"].array())
 
-        for x_exp,y_exp,z_exp,e_exp in zip(hit_x,hit_y,hit_z,hit_e):
-            tmp = np.append(tmp,list(zip(x_exp,y_exp,z_exp,e_exp)))
+            # Memory allocation of np.array increases the execution time.
+            # Hence it is better to use linked list.
+            # Linked list doesn't have to be reallocated in any
+            # append operation.
+
+            for x_exp,y_exp,z_exp,e_exp in zip(hit_x,hit_y,hit_z,hit_e):
+                tmp.append([x_exp,y_exp,z_exp,e_exp])
+
+            tmp = np.array(tmp)
 
         quadruple_array = np.append(quadruple_array,tmp)
 
