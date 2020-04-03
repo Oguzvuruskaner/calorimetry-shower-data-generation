@@ -1,1 +1,2 @@
-/pion50GeVshowers.root
+*.root
+*.npy
