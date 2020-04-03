@@ -30,13 +30,13 @@ def create_all_inputs_file(pathList:[str]):
             hit_z = np.append(hit_z, np.array(root[__ROOT_DIRECTORY__][b"hit_z"].array()).flatten())
 
 
-    np.save("hit_e_combined.npy", hit_e)
+    np.save("npy/hit_e_combined.npy", hit_e)
     hit_e = None
-    np.save("hit_x_combined.npy", hit_x)
+    np.save("npy/hit_x_combined.npy", hit_x)
     hit_x = None
-    np.save("hit_y_combined.npy", hit_y)
+    np.save("npy/hit_y_combined.npy", hit_y)
     hit_y = None
-    np.save("hit_z_combined.npy", hit_z)
+    np.save("npy/hit_z_combined.npy", hit_z)
     hit_z = None
 
 
@@ -96,7 +96,7 @@ def create_all_quadruple_array_file(pathList:[str]):
         for i in range(len(hit_x)):
             currentElement += len(hit_x[i])
 
-        tmp = np.empty((currentElement,4),dtype=np.float64)
+        tmp = np.zeros((currentElement,4),dtype=np.float64)
         currentElement = 0
 
         for i in tqdm(range(len(hit_x))):
@@ -110,9 +110,10 @@ def create_all_quadruple_array_file(pathList:[str]):
 
 
         quadruple_array = np.append(quadruple_array, tmp)
-        tmp = []
 
-    np.save("quadruple_all.npy", quadruple_array)
+    print(quadruple_array.size)
+    quadruple_array.resize((quadruple_array.size//4,4))
+    np.save("npy/quadruple_all.npy", quadruple_array)
 
 
 def create_quadruple_array_file(pathList:[str]):
@@ -147,7 +148,7 @@ def create_quadruple_array_file(pathList:[str]):
 
             tmp2.append(np.array(tmp))
 
-        quadruple_array = np.append(quadruple_array,tmp2)
+        quadruple_array = np.append(quadruple_array,np.array(tmp2))
 
 
-    np.save("quadruple.npy", quadruple_array)
+    np.save("npy/quadruple.npy", quadruple_array)

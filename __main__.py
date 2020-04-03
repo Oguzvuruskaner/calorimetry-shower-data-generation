@@ -1,26 +1,19 @@
-from readRoot import create_npy_files
-from Model import train, validate, validate_critic
+from detectAnomaly import getAbnormalValues
 import numpy as np
-from os.path import join
-from time import time
+from readRoot import create_all_quadruple_array_file
+from scripts import loadAndSplitArray
 
-# Model Version
-__VERSION__ = 3
+
+def main(args):
+    pass
+
 
 if __name__ == "__main__":
 
-    # Fully randomize the plotting process.
-    np.random.seed(int(time()))
+    create_all_quadruple_array_file(["pion50GeVshowers.root"])
+    loadAndSplitArray("npy/quadruple_all.npy",10)
 
-    create_npy_files("pion50GeVshowers.root")
-
-    # allow_pickle parameter
-    # prevents ValueError
-    # resulting from numpy arrays.
-    # arr = np.load("hit_e.npy",allow_pickle=True)
-
-    # train(arr,version=__VERSION__)
-    #
-    # validate(arr,join("models","gen{}_generator.h5".format(__VERSION__)))
-
-    # validate_critic(join("models","gen3_critic.h5"),join("models","gen3_generator.h5"))
+    # data = np.load("npy/quadruple_all_chunk_10.npy")
+    # data = np.array_split(data,90)[0]
+    # data.resize((data.shape[0],1))
+    # getAbnormalValues(data,model_path="isolation_forest_100.pkl")
