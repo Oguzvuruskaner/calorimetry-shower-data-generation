@@ -25,28 +25,63 @@ def create_all_inputs_file(pathList:[str]):
 
         with uproot.open(rootFile) as root:
 
-            hit_e = np.append(hit_e, np.array(root[__ROOT_DIRECTORY__][b"hit_e"].array()).flatten())
-            hit_x = np.append(hit_x, np.array(root[__ROOT_DIRECTORY__][b"hit_x"].array()).flatten())
-            hit_y = np.append(hit_y, np.array(root[__ROOT_DIRECTORY__][b"hit_y"].array()).flatten())
-            hit_z = np.append(hit_z, np.array(root[__ROOT_DIRECTORY__][b"hit_z"].array()).flatten())
+            tmp_e = np.array(root[__ROOT_DIRECTORY__][b"hit_e"].array())
+            tmp_x = np.array(root[__ROOT_DIRECTORY__][b"hit_x"].array())
+            tmp_y = np.array(root[__ROOT_DIRECTORY__][b"hit_y"].array())
+            tmp_z = np.array(root[__ROOT_DIRECTORY__][b"hit_z"].array())
 
         currentElement = 0
-        for i in range(len(hit_x)):
-            currentElement += len(hit_x[i])
+        for i in range(len(tmp_e)):
+            currentElement += len(tmp_e[i])
 
-        hit_e.resize((currentElement,1))
-        hit_x.resize((currentElement,1))
-        hit_y.resize((currentElement,1))
-        hit_z.resize((currentElement,1))
+
+
+        tmp = np.empty((currentElement, 1))
+        currentElement = 0
+        for a in tqdm(tmp_e):
+            for b in a:
+                tmp[currentElement][0] = b
+                currentElement += 1
+        hit_e = np.append(tmp,hit_e)
+
+
+        tmp = np.empty((currentElement, 1))
+        currentElement = 0
+        for a in tqdm(tmp_x):
+            for b in a:
+                tmp[currentElement][0] = b
+                currentElement += 1
+
+        hit_x = np.append(tmp, hit_x)
+
+        tmp = np.empty((currentElement, 1))
+        currentElement = 0
+        for a in tqdm(tmp_y):
+            for b in a:
+                tmp[currentElement][0] = b
+                currentElement += 1
+
+        hit_y = np.append(tmp, hit_y)
+
+        tmp = np.empty((currentElement, 1))
+        currentElement = 0
+        for a in tqdm(tmp_z):
+            for b in a:
+                tmp[currentElement][0] = b
+                currentElement += 1
+
+        hit_z = np.append(tmp, hit_z)
+
+
+    hit_e.resize((hit_e.size,1))
+    hit_x.resize((hit_x.size,1))
+    hit_y.resize((hit_y.size,1))
+    hit_z.resize((hit_z.size,1))
 
     np.save("npy/hit_e_combined.npy", hit_e)
-    hit_e = None
     np.save("npy/hit_x_combined.npy", hit_x)
-    hit_x = None
     np.save("npy/hit_y_combined.npy", hit_y)
-    hit_y = None
     np.save("npy/hit_z_combined.npy", hit_z)
-    hit_z = None
 
 
 def create_per_experiment_file(pathList:[str]):
