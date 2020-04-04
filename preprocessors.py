@@ -1,4 +1,4 @@
-from sklearn.preprocessing import StandardScaler,MinMaxScaler,RobustScaler
+from sklearn.preprocessing import StandardScaler,MinMaxScaler,RobustScaler,MaxAbsScaler
 from pickle import load,dump
 
 def train_preprocessors(data,dataset_name):
@@ -18,4 +18,7 @@ def train_preprocessors(data,dataset_name):
     with open("scalers/robust_scaler_{}.pkl".format(dataset_name), "wb") as fp:
         dump(robustScaler, fp)
 
-
+    maxAbsScaler = MaxAbsScaler()
+    maxAbsScaler.fit(data)
+    with open("scalers/{}_max_abs_scaler.pkl".format(dataset_name),"wb") as fp:
+        dump(maxAbsScaler,fp)
