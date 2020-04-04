@@ -1,6 +1,7 @@
 import uproot
 import numpy as np
 from tqdm import tqdm
+from os import path
 
 # __ROOT_DIRECTORIES__ = [b"showers;14", b"showers;15", b"showers"]
 __ROOT_DIRECTORY__ =  b"showers"
@@ -78,10 +79,10 @@ def create_all_inputs_file(pathList:[str]):
     hit_y.resize((hit_y.size,1))
     hit_z.resize((hit_z.size,1))
 
-    np.save("npy/hit_e_combined.npy", hit_e)
-    np.save("npy/hit_x_combined.npy", hit_x)
-    np.save("npy/hit_y_combined.npy", hit_y)
-    np.save("npy/hit_z_combined.npy", hit_z)
+    np.save(path.join("npy","hit_e_combined.npy"), hit_e)
+    np.save(path.join("npy","hit_x_combined.npy"), hit_x)
+    np.save(path.join("npy","hit_y_combined.npy"), hit_y)
+    np.save(path.join("npy","hit_z_combined.npy"), hit_z)
 
 
 def create_per_experiment_file(pathList:[str]):
@@ -107,16 +108,12 @@ def create_per_experiment_file(pathList:[str]):
             hit_z = np.append(hit_z, np.array(root[__ROOT_DIRECTORY__][b"hit_z"].array()))
 
 
-    np.save("hit_e.npy", hit_e)
-    hit_e = None
-    np.save("hit_x.npy", hit_x)
-    hit_x = None
-    np.save("hit_y.npy", hit_y)
-    hit_y = None
-    np.save("hit_z.npy", hit_z)
-    hit_z = None
+    np.save(path.join("npy","hit_e.npy"), hit_e)
+    np.save(path.join("npy","hit_x.npy"), hit_x)
+    np.save(path.join("npy","hit_y.npy"), hit_y)
+    np.save(path.join("npy","hit_z.npy"), hit_z)
 
-def create_all_quadruple_array_file(pathList:[str]):
+def create_all_quadruple_file(pathList:[str]):
     """
 
     :param pathList: List of root file paths.
@@ -157,45 +154,9 @@ def create_all_quadruple_array_file(pathList:[str]):
 
     print(quadruple_array.size)
     quadruple_array.resize((quadruple_array.size//4,4))
-    np.save("npy/quadruple_all.npy", quadruple_array)
+    np.save(path.join("npy","quadruple_all.npy"), quadruple_array)
 
 
-def create_quadruple_array_file(pathList:[str]):
-
-    """
-    Merges 4 features with given order
-    (hit_x,hit_y,hit_z,hit_e)
-    and writes them to a file.
-
-    :param :List of root file paths.
-    :return: None
-    """
-
-    quadruple_array = np.array([])
-
-    for rootFile in pathList:
-
-        with uproot.open(rootFile) as root:
-
-            hit_x = np.array(root[__ROOT_DIRECTORY__][b"hit_x"].array())
-            hit_y = np.array(root[__ROOT_DIRECTORY__][b"hit_y"].array())
-            hit_z = np.array(root[__ROOT_DIRECTORY__][b"hit_z"].array())
-            hit_e = np.array(root[__ROOT_DIRECTORY__][b"hit_e"].array())
-
-        tmp2 = []
-
-        for i in tqdm(range(len(hit_x))):
-            tmp = []
-
-            for x_exp,y_exp,z_exp,e_exp in zip(hit_x[i],hit_y[i],hit_z[i],hit_e[i]):
-                tmp.append([x_exp,y_exp,z_exp,e_exp])
-
-            tmp2.append(np.array(tmp))
-
-        quadruple_array = np.append(quadruple_array,np.array(tmp2))
-
-
-    np.save("npy/quadruple.npy", quadruple_array)
 
 
 def create_quadruple_array_file_fill_zeros(pathList:[str]):
@@ -236,4 +197,4 @@ def create_quadruple_array_file_fill_zeros(pathList:[str]):
 
     firstAxis = quadruple_array.size// MAX_COLLISION_IN_EXPERIMENT // 4
     quadruple_array.resize((firstAxis,MAX_COLLISION_IN_EXPERIMENT,4))
-    np.save("npy/quadruple.npy", quadruple_array)
+    np.save(path.join("npy","quadruple.npy"), quadruple_array)
