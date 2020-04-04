@@ -5,6 +5,7 @@ from tqdm import tqdm
 # __ROOT_DIRECTORIES__ = [b"showers;14", b"showers;15", b"showers"]
 __ROOT_DIRECTORY__ =  b"showers"
 
+MAX_COLLISION_IN_EXPERIMENT = 200000
 
 def create_all_inputs_file(pathList:[str]):
     """
@@ -151,4 +152,45 @@ def create_quadruple_array_file(pathList:[str]):
         quadruple_array = np.append(quadruple_array,np.array(tmp2))
 
 
+    np.save("npy/quadruple.npy", quadruple_array)
+
+
+def create_quadruple_array_file_fill_zeros(pathList:[str]):
+
+    """
+    Merges 4 features with given order
+    (hit_x,hit_y,hit_z,hit_e)
+    fills empty spaces with zeros
+    and writes them to a file.
+
+    :param :List of root file paths.
+    :return: None
+    """
+
+    quadruple_array = np.array([])
+
+    for rootFile in pathList:
+
+        with uproot.open(rootFile) as root:
+
+            hit_x = np.array(root[__ROOT_DIRECTORY__][b"hit_x"].array())
+            hit_y = np.array(root[__ROOT_DIRECTORY__][b"hit_y"].array())
+            hit_z = np.array(root[__ROOT_DIRECTORY__][b"hit_z"].array())
+            hit_e = np.array(root[__ROOT_DIRECTORY__][b"hit_e"].array())
+
+        tmp = np.zeros((len(hit_x),MAX_COLLISION_IN_EXPERIMENT,4))
+
+        for i in tqdm(range(len(hit_x))):
+
+            for j,(x_exp,y_exp,z_exp,e_exp) in enumerate(zip(hit_x[i],hit_y[i],hit_z[i],hit_e[i])):
+                tmp[i][j][0] = x_exp
+                tmp[i][j][1] = y_exp
+                tmp[i][j][2] = z_exp
+                tmp[i][j][3] = e_exp
+
+
+        quadruple_array = np.append(tmp,quadruple_array)
+
+    firstAxis = quadruple_array.size// MAX_COLLISION_IN_EXPERIMENT // 4
+    quadruple_array.resize((firstAxis,MAX_COLLISION_IN_EXPERIMENT,4))
     np.save("npy/quadruple.npy", quadruple_array)
