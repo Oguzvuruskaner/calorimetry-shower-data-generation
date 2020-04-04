@@ -1,9 +1,13 @@
-from scripts import createScalers,createNpyFiles
+from scripts import createScalers,createNpyFiles,plotFeatures
+
+
+
 
 def main():
-    
-    createNpyFiles()
+
+    # createNpyFiles()
     createScalers()
+    plotFeatures()
 
 
 if __name__ == "__main__":
