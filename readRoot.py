@@ -30,6 +30,14 @@ def create_all_inputs_file(pathList:[str]):
             hit_y = np.append(hit_y, np.array(root[__ROOT_DIRECTORY__][b"hit_y"].array()).flatten())
             hit_z = np.append(hit_z, np.array(root[__ROOT_DIRECTORY__][b"hit_z"].array()).flatten())
 
+        currentElement = 0
+        for i in range(len(hit_x)):
+            currentElement += len(hit_x[i])
+
+        hit_e.resize((currentElement,1))
+        hit_x.resize((currentElement,1))
+        hit_y.resize((currentElement,1))
+        hit_z.resize((currentElement,1))
 
     np.save("npy/hit_e_combined.npy", hit_e)
     hit_e = None
