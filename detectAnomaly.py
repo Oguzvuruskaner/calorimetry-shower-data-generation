@@ -1,9 +1,8 @@
 from sklearn.ensemble import IsolationForest
-import matplotlib
 from pickle import dump,load
-from tqdm import tqdm
 import numpy as np
 from typing import Union
+from os.path import join
 
 N_ESTIMATORS = 100
 
@@ -17,7 +16,7 @@ def getAbnormalValues(data : Union[np.array,np.ndarray],model_path=None) -> np.n
 
     if not model_path:
 
-        fp = open("isolation_forest_{}.pkl".format(N_ESTIMATORS),"wb")
+        fp = open(join("models","isolation_forest_{}.pkl".format(N_ESTIMATORS)),"wb")
 
         isolation_forest = IsolationForest(n_estimators=N_ESTIMATORS,verbose=1,n_jobs=8)
         isolation_forest.fit(data)
