@@ -1,2 +1,4 @@
 *.root
 *.npy
+*.h5
+*.pkl
