@@ -1,5 +1,4 @@
 from typing import Union
-from scipy.stats import describe
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler, StandardScaler,RobustScaler,MaxAbsScaler
 from tqdm import tqdm
@@ -17,7 +16,15 @@ from readRoot import create_all_inputs_file,\
 # functionalities.
 
 
-__DATASETS__ = ["quadruple_all","hit_x_combined","hit_y_combined","hit_z_combined","hit_e_combined"]
+__DATASETS_WITH_OUTLIERS__ = ["quadruple_all","hit_x_combined","hit_y_combined","hit_z_combined","hit_e_combined"]
+
+__DATASETS__ = ["quadruple_all","hit_x_combined","hit_y_combined","hit_z_combined","hit_e_combined",
+                "quadruple_all_without_outliers","hit_x_combined_without_outliers",
+                "hit_y_combined_without_outliers","hit_z_combined_without_outliers",
+                "hit_e_combined_without_outliers"
+                ]
+
+# __DATASETS__ = ["hit_e_combined_without_outliers"]
 
 def createNpyFiles():
 
@@ -47,6 +54,26 @@ def loadAndSplitArray(filepath:str,number_of_chunks):
         np.save("train_chunks/{}_chunk_{}.npy".format(rootFilepath,index+1),chunk)
 
 
+def filterOutliers(outlier_threshold=4):
+    """
+    :param outlier_threshold: inside nth standard deviation
+        values are normal values ,outside the nth standard deviation
+        are abnormal values. .
+
+        4th standard deviation includes 99.99% of Gaussian distribution.
+
+    :return: None
+    """
+
+    for dataset_name in tqdm(__DATASETS_WITH_OUTLIERS__):
+        data = np.load(path.join("npy", "{}.npy".format(dataset_name)), allow_pickle=True)
+        ss = StandardScaler()
+        ss.fit(data)
+        filter_array = (ss.transform(data) <= outlier_threshold) | (ss.transform(data) >= -outlier_threshold)
+        data = data[filter_array]
+        data.resize((data.size,1))
+        np.save(path.join("npy", "{}_without_outliers.npy".format(dataset_name)),data)
+
 
 def createScalers():
 
@@ -56,7 +83,19 @@ def createScalers():
         train_preprocessors(data,dataset_name)
 
 
-def plotFeatures(NUMBER_OF_BINS=100,plot=False):
+
+
+    root_files_directory = path.join(getcwd(), "root_files")
+    root_files = [path.join("root_files", root_file) for root_file in listdir(root_files_directory)
+                  if root_file.endswith(".root")]
+
+    for root_file in root_files:
+
+        with open(root_file) as root:
+
+            root
+
+def plotFeatures(NUMBER_OF_BINS=200,plot=False):
 
     __SCALERS__ = ["min_max_scaler","robust_scaler","standard_scaler","max_abs_scaler"]
 
@@ -65,12 +104,23 @@ def plotFeatures(NUMBER_OF_BINS=100,plot=False):
 
         if data.shape[1] == 1 :
 
+            plt.hist(data, NUMBER_OF_BINS)
+            plt.xlabel("Value")
+            plt.ylabel("# Occurences")
+            plt.title("{}".format(dataset_name))
+            if not plot:
+                plt.savefig(path.join("plots", "{}.png".format(dataset_name)), bbox_inches='tight')
+            else:
+                plt.plot(bbox_inches='tight')
+
             for scaler_name in __SCALERS__:
 
                 with open(path.join("scalers","{}_{}.pkl".format(dataset_name,scaler_name)),"rb") as fp:
                     scaler : Union[MinMaxScaler,StandardScaler,MaxAbsScaler,RobustScaler] = load(fp)
 
-                plt.hist(scaler.transform(data),NUMBER_OF_BINS)
+                transformed_data = scaler.transform(data)
+
+                plt.hist(transformed_data,NUMBER_OF_BINS)
                 plt.xlabel("Value")
                 plt.ylabel("# Occurences")
                 plt.title("{} {}".format(dataset_name,scaler_name))
@@ -78,3 +128,6 @@ def plotFeatures(NUMBER_OF_BINS=100,plot=False):
                     plt.savefig(path.join("plots", "{}_{}.png".format(dataset_name, scaler_name)), bbox_inches='tight')
                 else:
                     plt.plot(bbox_inches='tight')
+
+
+
