@@ -8,6 +8,8 @@ __ROOT_DIRECTORY__ =  b"showers"
 
 MAX_COLLISION_IN_EXPERIMENT = 200000
 
+
+
 def create_all_inputs_file(pathList:[str]):
     """
     All features are combined into their feature array
@@ -152,7 +154,6 @@ def create_all_quadruple_file(pathList:[str]):
 
         quadruple_array = np.append(quadruple_array, tmp)
 
-    print(quadruple_array.size)
     quadruple_array.resize((quadruple_array.size//4,4))
     np.save(path.join("npy","quadruple_all.npy"), quadruple_array)
 
@@ -198,3 +199,4 @@ def create_quadruple_array_file_fill_zeros(pathList:[str]):
     firstAxis = quadruple_array.size// MAX_COLLISION_IN_EXPERIMENT // 4
     quadruple_array.resize((firstAxis,MAX_COLLISION_IN_EXPERIMENT,4))
     np.save(path.join("npy","quadruple.npy"), quadruple_array)
+
