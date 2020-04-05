@@ -1,8 +1,8 @@
 from typing import Union
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler, StandardScaler,RobustScaler,MaxAbsScaler
-from tqdm import tqdm
 import matplotlib.pyplot as plt
+from tqdm import tqdm
 import re
 from os import path,listdir,getcwd
 from preprocessors import train_preprocessors
@@ -81,19 +81,6 @@ def createScalers():
 
         data = np.load(path.join("npy","{}.npy".format(dataset_name)))
         train_preprocessors(data,dataset_name)
-
-
-
-
-    root_files_directory = path.join(getcwd(), "root_files")
-    root_files = [path.join("root_files", root_file) for root_file in listdir(root_files_directory)
-                  if root_file.endswith(".root")]
-
-    for root_file in root_files:
-
-        with open(root_file) as root:
-
-            root
 
 def plotFeatures(NUMBER_OF_BINS=200,plot=False):
 
