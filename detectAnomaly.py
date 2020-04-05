@@ -30,8 +30,7 @@ def getAbnormalValues(data : Union[np.array,np.ndarray],model_path=None) -> np.n
 
     outlierProbability = isolation_forest.predict(data)
 
-    asdf = data[outlierProbability == -1]
-    print(asdf)
+    return data[outlierProbability == -1]
 
 
 def filterAbnormalValues(data,filterValues):
