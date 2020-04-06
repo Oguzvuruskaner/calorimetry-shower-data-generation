@@ -100,8 +100,9 @@ def train(data,version=None,batch_size = 1000,epoch = 1000,critic_train_step=100
     generator.save(join("models","gen{}_generator.h5".format(version)))
 
 
-def loadModel(modelPath:str):
+def loadModel(modelPath:str,verbose=True):
     model : Model = load_model(modelPath,{"wasserstein":wasserstein})
-    model.summary()
+    if verbose:
+        model.summary()
     return model
 
