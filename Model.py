@@ -1,5 +1,5 @@
 from keras.models import Model,load_model
-from keras.layers import Input, Dense, BatchNormalization, PReLU, Dropout, LeakyReLU
+from keras.layers import Input, Dense, BatchNormalization, PReLU, Dropout, LeakyReLU, ReLU
 from keras.activations import tanh
 from keras import backend as K
 import numpy as np
@@ -44,6 +44,7 @@ def createGenerator(input_size=100,output_size=1000,number_of_layers=3):
         x = Dropout(.3)(x)
 
     output_layer = Dense(output_size)(x)
+    output_layer = ReLU(output_size)
 
     model = Model(inputs=(input_layer,),outputs=output_layer)
     model.compile(optimizer="adam",loss=wasserstein)
