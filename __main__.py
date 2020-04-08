@@ -1,7 +1,7 @@
 from keras import Model
 import seaborn as sns
-
-from scripts import createNpyFiles, loadAndSplitArray,filterOutliers,createScalers,plotFeatures
+import matplotlib.pyplot as plt
+from scripts import createNpyFiles, loadAndSplitArray, filterOutliers, createScalers, plotFeatures, getSamples
 from os.path import join
 import numpy as np
 from Model import train,loadModel
@@ -39,10 +39,15 @@ def evalulate_gan():
     figure.savefig(join("plots","generator_v1_plot"))
 
 
-
-
 if __name__ == "__main__":
 
+    # main()
+    # train_gan()
+    # evalulate_gan()
+    # getSamples()
+    # data = np.load(join("npy","hit_e_combined_1000000.npy"))
+    # np.max(data)
+    # sns.distplot(data,kde=False)
+    # data = np.load(join("npy","hit_e_combined.npy"))
+    # sns.distplot(data,kde=False)
     main()
-    train_gan()
-    evalulate_gan()

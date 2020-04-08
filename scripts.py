@@ -8,7 +8,6 @@ from os import path,listdir,getcwd
 from preprocessors import train_preprocessors
 from pickle import load
 from readRoot import create_all_inputs_file,\
-    create_quadruple_array_file_fill_zeros,\
     create_all_quadruple_file,\
     create_per_experiment_file
 
@@ -16,7 +15,7 @@ from readRoot import create_all_inputs_file,\
 # functionalities.
 
 
-__DATASETS_WITH_OUTLIERS__ = ["quadruple_all","hit_x_combined","hit_y_combined","hit_z_combined","hit_e_combined"]
+__DATASETS_WITH_OUTLIERS__ = ["quadruple_all","hit_r_combined","hit_z_combined","hit_e_combined"]
 
 __DATASETS__ = ["quadruple_all","hit_x_combined","hit_y_combined","hit_z_combined","hit_e_combined",
                 "quadruple_all_without_outliers","hit_x_combined_without_outliers",
@@ -36,7 +35,6 @@ def createNpyFiles():
     create_per_experiment_file(root_files)
     create_all_quadruple_file(root_files)
     create_all_inputs_file(root_files)
-    create_quadruple_array_file_fill_zeros(root_files)
 
 def loadAndSplitArray(filepath:str,number_of_chunks):
 
@@ -75,13 +73,6 @@ def filterOutliers(outlier_threshold=4):
         np.save(path.join("npy", "{}_without_outliers.npy".format(dataset_name)),data)
 
 
-def createScalers():
-
-    for dataset_name in tqdm(__DATASETS__):
-
-        data = np.load(path.join("npy","{}.npy".format(dataset_name)))
-        train_preprocessors(data,dataset_name)
-
 def plotFeatures(NUMBER_OF_BINS=200,plot=False):
 
     __SCALERS__ = ["min_max_scaler","robust_scaler","standard_scaler","max_abs_scaler"]
@@ -115,7 +106,6 @@ def plotFeatures(NUMBER_OF_BINS=200,plot=False):
                     plt.savefig(path.join("plots", "{}_{}.png".format(dataset_name, scaler_name)), bbox_inches='tight')
                 else:
                     plt.plot(bbox_inches='tight')
-
 
 
 def getSamples(sample_size=10**6):
