@@ -43,8 +43,8 @@ def createGenerator(input_size=100,output_size=1000,number_of_layers=3):
         x = BatchNormalization()(x)
         x = Dropout(.3)(x)
 
-    output_layer = Dense(output_size)(x)
-    output_layer = ReLU(output_size)
+    x = Dense(output_size)(x)
+    output_layer = ReLU(output_size)(x)
 
     model = Model(inputs=(input_layer,),outputs=output_layer)
     model.compile(optimizer="adam",loss=wasserstein)
