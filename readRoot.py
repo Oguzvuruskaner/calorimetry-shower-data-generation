@@ -151,7 +151,7 @@ def create_all_quadruple_file(pathList:[str]):
         quadruple_array = np.append(quadruple_array, tmp)
 
     quadruple_array.resize((quadruple_array.size//3,3))
-    np.save(path.join("npy","quadruple_all.npy"), quadruple_array)
+    np.save(path.join("npy","triple_all.npy"), quadruple_array)
 
 
 
