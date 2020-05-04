@@ -196,21 +196,21 @@ def show_stats(results:np.array):
     tmp += ".75 Quantile : {0:10.3f}\n".format(np.quantile(results,.75))
     return tmp
 
+def plot_data(data:np.array,plot_title:str,filepath:str):
+    plt.clf()
+    fig,(ax1,ax2) = plt.subplots(1,2)
+    sns.distplot(data,kde=False,ax=ax1)
+    ax1.set_title(plot_title)
+    ax2.set_title("Stats")
+    ax2.grid(False)
+    ax2.axes.xaxis.set_ticks([])
+    ax2.axes.yaxis.set_ticks([])
+
+    ax2.text(0.1,0.5,show_stats(data),clip_on=True)
+    plt.savefig(filepath)
+    plt.clf()
+
 def generate_fake_data(generator:Model,visualized_experiments=5,generated_experiments=100,version=__MODEL_VERSION__):
-
-    def plot_results(results:np.array,plot_title:str,filepath:str):
-        plt.clf()
-        fig,(ax1,ax2) = plt.subplots(1,2)
-        sns.distplot(results,kde=False,ax=ax1)
-        ax1.set_title(plot_title)
-        ax2.set_title("Stats")
-        ax2.grid(False)
-        ax2.axes.xaxis.set_ticks([])
-        ax2.axes.yaxis.set_ticks([])
-
-        ax2.text(0.1,0.5,show_stats(results),clip_on=True)
-        plt.savefig(filepath)
-        plt.clf()
 
 
     tmp_data_r = []
@@ -230,11 +230,11 @@ def generate_fake_data(generator:Model,visualized_experiments=5,generated_experi
             tmp_data_z.append(results_z[j])
 
 
-        plot_results(results_r,"r Experiment {}".format(i+1),
+        plot_data(results_r,"r Experiment {}".format(i+1),
                      join("results","r_result_experiment_{}_v_{}".format(i+1,version)))
-        plot_results(results_z, "z Experiment {}".format(i + 1),
+        plot_data(results_z, "z Experiment {}".format(i + 1),
                      join("results", "z_result_experiment_{}_v_{}".format(i + 1, version)))
-        plot_results(results_e, "e Experiment {}".format(i + 1),
+        plot_data(results_e, "e Experiment {}".format(i + 1),
                      join("results", "e_result_experiment_{}_v_{}".format(i + 1, version)))
 
     print("Generating data ")
@@ -253,26 +253,17 @@ def generate_fake_data(generator:Model,visualized_experiments=5,generated_experi
     tmp_data_e = np.array(tmp_data_e)
     tmp_data_z = np.array(tmp_data_z)
 
-    plot_results(tmp_data_r,"r Results",
+    plot_data(tmp_data_r,"r Results",
                  join("results","r_result_all_v_{}".format(version)))
-    plot_results(tmp_data_z, "z Results",
+    plot_data(tmp_data_z, "z Results",
                  join("results", "z_result_all_v_{}".format(version)))
-    plot_results(tmp_data_e, "e Results",
+    plot_data(tmp_data_e, "e Results",
                      join("results", "e_result_all_v_{}".format(version)))
 
-    np.save(join("results","results_r_array_v{}.npy".format(version)),results_r)
-    np.save(join("results","results_e_array_v{}.npy".format(version)),results_e)
-    np.save(join("results","results_z_array_v{}.npy".format(version)),results_z)
+    np.save(join("results","results_r_array_v{}.npy".format(version)),tmp_data_r)
+    np.save(join("results","results_e_array_v{}.npy".format(version)),tmp_data_e)
+    np.save(join("results","results_z_array_v{}.npy".format(version)),tmp_data_z)
 
-
-def test_model(version:int = __MODEL_VERSION__):
-
-    generator : Model = loadModel(join("models","gen{}_generator.h5".format(version)))
-    total_particles = get_total_particles()
-
-    input_shape = generator.input_shape
-    noise_inputs = np.random.normal(0,1,size=(total_particles,input_shape))
-    results = generator.predict(noise_inputs)
 
 
 def loadModel(model_path:str):
