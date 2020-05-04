@@ -1,109 +1,286 @@
+from keras.engine.saving import save_model
 from keras.models import Model,load_model
-from keras.layers import Input, Dense, BatchNormalization, PReLU, Dropout, LeakyReLU, ReLU
-from keras.activations import tanh
-from keras import backend as K
+from keras.layers import Input, Dense, BatchNormalization, Flatten, LeakyReLU, LocallyConnected1D, \
+    Reshape
+from keras import backend as K, Sequential
 import numpy as np
 from os.path import join
+
+from keras.optimizers import Adam
+from keras.utils import plot_model
 from tqdm import tqdm
+from config import __MODEL_VERSION__
+import matplotlib.pyplot as plt
+import seaborn as sns
+from scipy.stats import describe
 
 
-def wasserstein(y_true,y_pred):
-    return -K.mean(y_pred*y_true)
+
+def wasserstein_loss(y_true, y_pred):
+    return K.mean(y_true * y_pred)
 
 
-def createCritic(input_size=1000,number_of_layers=3):
+# As it is decided from the last conference,
+# the genreator is going to try to generate the
+# hypothesis that hit_r,hit_e and hit_z values are only dependent to each other.
 
-    input_layer = Input(shape=(input_size,))
-    x = BatchNormalization()(input_layer)
-
-    for i in range(number_of_layers):
-        x = Dense(250)(x)
-        x = LeakyReLU()(x)
-        x = BatchNormalization()(x)
-        x = Dropout(.3)(x)
+def create_generator(input_size = 100,version=__MODEL_VERSION__):
 
 
-    output_layer = Dense(1,activation=tanh)(x)
+    model = Sequential([
+        Dense(input_size*3,input_dim=input_size),
+        # current_size=(100,)
+        Reshape((input_size,3)),
+        LocallyConnected1D(3,1),
+        # current_size = (100,3)
+        LeakyReLU(),
+        BatchNormalization(),
+        Flatten(),
+        Dense(3, activation="relu")
+    ],name="generator_{}".format(version))
 
-    model = Model(inputs=(input_layer,),outputs=output_layer)
-    model.compile(optimizer="adam",loss=wasserstein)
-    model.name = "Critic"
-
-    return model
-
-
-def createGenerator(input_size=100,output_size=1000,number_of_layers=3):
-
-    input_layer = Input(shape=(input_size,))
-    x = BatchNormalization()(input_layer)
-
-    for i in range(number_of_layers):
-        x = Dense(500)(x)
-        x = LeakyReLU()(x)
-        x = BatchNormalization()(x)
-        x = Dropout(.3)(x)
-
-    x = Dense(output_size)(x)
-    output_layer = ReLU(output_size)(x)
-
-    model = Model(inputs=(input_layer,),outputs=output_layer)
-    model.compile(optimizer="adam",loss=wasserstein)
-    model.name = "Generator"
+    model.summary()
 
     return model
 
 
+def create_critic(input_size=3,version=__MODEL_VERSION__):
 
-def train(data,version=None,batch_size = 1000,epoch = 1000,critic_train_step=1000):
 
-    data_norm = data
-    # data_norm = (data - np.min(data))/(np.max(data)-np.min(data))
+    model = Sequential([
+        Dense(input_size,input_dim=input_size),
+        Reshape((3,1)),
+        LocallyConnected1D(1,3),
+        LeakyReLU(),
+        BatchNormalization(),
+        Flatten(),
+        Dense(1, activation="tanh")
+    ],name="critic_{}".format(version))
 
-    generator = createGenerator(output_size=batch_size)
-    GAN_input = Input((generator.input_shape[1],))
-    critic = createCritic(input_size=batch_size)
+    model.summary()
+
+    return model
+
+def create_gan(generator:Model, critic:Model,noise_size=100):
+
+    generator_input = Input(shape=(noise_size,))
+
+    full_generator = generator(generator_input)
+
+    for layer in generator.layers:
+        layer.trainable = True
+    generator.trainable = True
+
+    for layer in critic.layers:
+        layer.trainable = False
     critic.trainable = False
 
-    GAN = Model(inputs=GAN_input,
-                outputs=critic(generator(GAN_input)))
 
-    GAN.compile(optimizer="adam",loss=wasserstein)
+    critic_generator_combined = critic(full_generator)
 
+    GAN = Model(inputs=[generator_input],outputs=[critic_generator_combined])
+
+    GAN.compile(optimizer=Adam(0.0001,beta_1=0.5,beta_2=0.9),loss=wasserstein_loss)
     GAN.summary()
 
-    for _ in tqdm(range(epoch)):
+    return GAN
+
+def create_full_discriminator_model(critic,generator,noise_size=100):
+
+    for layer in critic.layers:
+        layer.trainable = True
+    critic.trainable = True
+
+    for layer in generator.layers:
+        layer.trainable = False
+    generator.trainable = False
+
+    fake_data_input = Input(shape=(noise_size,))
+    generator_with_input = generator(fake_data_input)
+    critic_with_fake_data = critic(generator_with_input)
+
+    real_data_input = Input(shape=(3,))
+    critic_with_real_data = critic(real_data_input)
+
+    full_discriminator = Model(inputs=[real_data_input,fake_data_input],
+                               outputs=[critic_with_real_data,critic_with_fake_data])
+
+    full_discriminator.compile(optimizer=Adam(0.0001,beta_1=0.5,beta_2=0.5),loss=[
+        wasserstein_loss,
+        wasserstein_loss
+    ])
+
+    return full_discriminator
+
+def train_model(data,version = __MODEL_VERSION__,epochs = 200,steps_per_epoch=500,batch_size=5):
+
+    generator = create_generator()
+
+    critic = create_critic()
+    gan = create_gan(generator,critic)
+    full_discriminator = create_full_discriminator_model(critic,generator)
+
+    discriminator_loss = []
+    generator_loss = []
 
 
-        #Train critic with real data.
-        rand_data = np.random.choice(data_norm,(critic_train_step,batch_size))
-        y_values = np.ones((critic_train_step,1))
-        critic.train_on_batch(rand_data,y_values)
+    for _ in tqdm(range(epochs)):
 
-        noise_input = np.random.normal(loc=0,scale=1,size=(critic_train_step,generator.input_shape[1]))
-        pred = generator.predict(noise_input)
+        discriminator_tmp = []
+        generator_tmp = []
 
-        #Train critic with fake data.
-        y_values = -np.ones((critic_train_step, 1))
-        critic.train_on_batch(pred, y_values)
+        for _ in range(steps_per_epoch):
 
-        # Weight clipping
-        # for layer in critic.layers:
-        #     weights = layer.get_weights()
-        #     weights = [np.clip(w,-clip_threshold,clip_threshold) for w in weights]
-        #     layer.set_weights(weights)
+            indices_array = np.random.choice(np.arange(len(data)),batch_size)
 
+            true_input = data[indices_array]
+            fake_input = np.random.normal(0,1,(batch_size,100))
 
-        y_values = np.ones((critic_train_step, 1))
-        noise_input = np.random.normal(loc=0, scale=1, size=(critic_train_step, generator.input_shape[1]))
-        GAN.train_on_batch(noise_input, y_values)
+            true_label = np.ones((batch_size,1))
+            fake_label = - true_label
 
-    critic.save(join("models","gen{}_critic.h5".format(version)))
-    generator.save(join("models","gen{}_generator.h5".format(version)))
+            train_result = full_discriminator.train_on_batch([true_input,fake_input],[true_label,fake_label])
+            discriminator_tmp.append(np.mean(train_result))
+
+            train_result = gan.train_on_batch([fake_input],[true_label])
+            generator_tmp.append(train_result)
+
+        generator_loss.append(np.mean(generator_tmp))
+        discriminator_loss.append(np.mean(discriminator_tmp))
 
 
-def loadModel(modelPath:str,verbose=True):
-    model : Model = load_model(modelPath,{"wasserstein":wasserstein})
-    if verbose:
-        model.summary()
+    save_model(generator,join("models","gen{}_generator.h5".format(version)))
+    save_model(critic,join("models","gen{}_critic.h5".format(version)))
+
+    plot_model(generator, join("models", "gen{}_generator_model.png".format(version))  ,show_shapes=True)
+    plot_model(critic, join("models", "gen{}_critic_model.png".format(version)),show_shapes=True)
+
+    plt.ylim((-1.,1.))
+    plt.xlim((0,epochs+1))
+    plt.scatter(np.arange(epochs)+1,generator_loss)
+    plt.title("gen{}_generator Loss".format(version))
+    plt.xlabel("Epochs")
+    plt.ylabel("Loss")
+    plt.savefig(join("models","gen{}_generator_loss.png".format(version)))
+    plt.clf()
+
+    plt.xlim((0,epochs+1))
+    plt.ylim((-1.,1.))
+    plt.scatter(np.arange(epochs)+1,discriminator_loss)
+    plt.title("gen{}_critic Loss".format(version))
+    plt.xlabel("Epochs")
+    plt.ylabel("Loss")
+    plt.savefig(join("models","gen{}_critic_loss.png".format(version)))
+    plt.clf()
+
+    generate_fake_data(generator,version=version)
+
+
+def get_total_particles():
+    #For now, generation of number of particles in experiment
+    # is done manually.
+    return int(np.random.normal(139356,25077,size=(1,))[0])
+
+
+def show_stats(results:np.array):
+
+    tmp = ""
+    tmp += "Total Entities : {} \n".format(len(results))
+    tmp += "Mean : {0:10.3f} \n".format(results.mean())
+    tmp += "Std : {0:10.3f} \n".format(results.std())
+    tmp += "Variance : {0:10.3f}\n".format(results.std()**2)
+    tmp += "Min : {0:10.3f}\n".format(results.min())
+    tmp += "Max : {0:10.3f}\n".format(results.max())
+    tmp += ".25 Quantile : {0:10.3f}\n".format(np.quantile(results,.25))
+    tmp += ".50 Quantile : {0:10.3f}\n".format(np.quantile(results,.5))
+    tmp += ".75 Quantile : {0:10.3f}\n".format(np.quantile(results,.75))
+    return tmp
+
+def generate_fake_data(generator:Model,visualized_experiments=5,generated_experiments=100,version=__MODEL_VERSION__):
+
+    def plot_results(results:np.array,plot_title:str,filepath:str):
+        plt.clf()
+        fig,(ax1,ax2) = plt.subplots(1,2)
+        sns.distplot(results,kde=False,ax=ax1)
+        ax1.set_title(plot_title)
+        ax2.set_title("Stats")
+        ax2.grid(False)
+        ax2.axes.xaxis.set_ticks([])
+        ax2.axes.yaxis.set_ticks([])
+
+        ax2.text(0.1,0.5,show_stats(results),clip_on=True)
+        plt.savefig(filepath)
+        plt.clf()
+
+
+    tmp_data_r = []
+    tmp_data_z = []
+    tmp_data_e = []
+
+    print("Generating visualizations ")
+    for i in tqdm(range(visualized_experiments)):
+        results = generator.predict(np.random.normal(0,1,(get_total_particles(),100)))
+        results_r = results[:,0]
+        results_z = results[:,1]
+        results_e = results[:,2]
+
+        for j in range(len(results_r)):
+            tmp_data_r.append(results_r[j])
+            tmp_data_e.append(results_e[j])
+            tmp_data_z.append(results_z[j])
+
+
+        plot_results(results_r,"r Experiment {}".format(i+1),
+                     join("results","r_result_experiment_{}_v_{}".format(i+1,version)))
+        plot_results(results_z, "z Experiment {}".format(i + 1),
+                     join("results", "z_result_experiment_{}_v_{}".format(i + 1, version)))
+        plot_results(results_e, "e Experiment {}".format(i + 1),
+                     join("results", "e_result_experiment_{}_v_{}".format(i + 1, version)))
+
+    print("Generating data ")
+    for _ in tqdm(range(generated_experiments)):
+        results = generator.predict(np.random.normal(0,1,(get_total_particles(),100)))
+        results_r = results[:, 0]
+        results_z = results[:, 1]
+        results_e = results[:, 2]
+
+        for i in range(len(results_r)):
+            tmp_data_r.append(results_r[i])
+            tmp_data_e.append(results_e[i])
+            tmp_data_z.append(results_z[i])
+
+    tmp_data_r = np.array(tmp_data_r)
+    tmp_data_e = np.array(tmp_data_e)
+    tmp_data_z = np.array(tmp_data_z)
+
+    plot_results(tmp_data_r,"r Results",
+                 join("results","r_result_all_v_{}".format(version)))
+    plot_results(tmp_data_z, "z Results",
+                 join("results", "z_result_all_v_{}".format(version)))
+    plot_results(tmp_data_e, "e Results",
+                     join("results", "e_result_all_v_{}".format(version)))
+
+    np.save(join("results","results_r_array_v{}.npy".format(version)),results_r)
+    np.save(join("results","results_e_array_v{}.npy".format(version)),results_e)
+    np.save(join("results","results_z_array_v{}.npy".format(version)),results_z)
+
+
+def test_model(version:int = __MODEL_VERSION__):
+
+    generator : Model = loadModel(join("models","gen{}_generator.h5".format(version)))
+    total_particles = get_total_particles()
+
+    input_shape = generator.input_shape
+    noise_inputs = np.random.normal(0,1,size=(total_particles,input_shape))
+    results = generator.predict(noise_inputs)
+
+
+def loadModel(model_path:str):
+
+    # For additional variables in the model,
+    # the developer should declare a dictionary
+
+    variable_dict = {}
+    model = load_model(model_path,variable_dict)
     return model
 

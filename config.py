@@ -5,3 +5,5 @@ __DATASETS__ = ["triple_all","hit_r_combined","hit_z_combined","hit_e_combined",
                 "hit_z_combined_without_outliers",
                 "hit_e_combined_without_outliers"
                 ]
+
+__MODEL_VERSION__ = 1
