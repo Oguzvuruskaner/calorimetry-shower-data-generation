@@ -23,4 +23,4 @@ def main():
 
 if __name__ == "__main__":
 
-    plot_all_data()
+    main()

@@ -1,7 +1,7 @@
 from keras.engine.saving import save_model
 from keras.models import Model,load_model
 from keras.layers import Input, Dense, BatchNormalization, Flatten, LeakyReLU, LocallyConnected1D, \
-    Reshape
+    Reshape, Dropout, concatenate
 from keras import backend as K, Sequential
 import numpy as np
 from os.path import join
@@ -12,7 +12,6 @@ from tqdm import tqdm
 from config import __MODEL_VERSION__
 import matplotlib.pyplot as plt
 import seaborn as sns
-from scipy.stats import describe
 
 
 
@@ -26,18 +25,23 @@ def wasserstein_loss(y_true, y_pred):
 
 def create_generator(input_size = 100,version=__MODEL_VERSION__):
 
-
+    # Since z values may be negative,
+    # Relu should be used only for r and e values.
     model = Sequential([
-        Dense(input_size*3,input_dim=input_size),
-        # current_size=(100,)
-        Reshape((input_size,3)),
-        LocallyConnected1D(3,1),
-        # current_size = (100,3)
+        Dense(256,input_dim=input_size),
+        Dropout(.3),
         LeakyReLU(),
-        BatchNormalization(),
-        Flatten(),
-        Dense(3, activation="relu")
+        BatchNormalization()
     ],name="generator_{}".format(version))
+
+    # Adding hidden layers
+    for i in range(4):
+        model.add(Dense(256))
+        model.add(Dropout(.3))
+        model.add(LeakyReLU())
+        model.add(BatchNormalization())
+
+    model.add(Dense(3))
 
     model.summary()
 
@@ -48,14 +52,20 @@ def create_critic(input_size=3,version=__MODEL_VERSION__):
 
 
     model = Sequential([
-        Dense(input_size,input_dim=input_size),
-        Reshape((3,1)),
-        LocallyConnected1D(1,3),
+        Dense(256,input_dim=input_size),
+        Dropout(.3),
         LeakyReLU(),
         BatchNormalization(),
-        Flatten(),
-        Dense(1, activation="tanh")
     ],name="critic_{}".format(version))
+
+    # Adding hidden layers
+    for i in range(4):
+        model.add(Dense(256))
+        model.add(Dropout(.3))
+        model.add(LeakyReLU())
+        model.add(BatchNormalization())
+
+    model.add(Dense(1, activation="tanh"))
 
     model.summary()
 
