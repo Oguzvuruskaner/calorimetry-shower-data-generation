@@ -29,9 +29,7 @@ def create_generator(input_size = 100,version=__MODEL_VERSION__):
     # Relu should be used only for r and e values.
     model = Sequential([
         Dense(256,input_dim=input_size),
-        Dropout(.3),
         LeakyReLU(),
-        BatchNormalization()
     ],name="generator_{}".format(version))
 
     # Adding hidden layers
@@ -43,7 +41,6 @@ def create_generator(input_size = 100,version=__MODEL_VERSION__):
 
     model.add(Dense(3))
 
-    model.summary()
 
     return model
 
@@ -52,22 +49,19 @@ def create_critic(input_size=3,version=__MODEL_VERSION__):
 
 
     model = Sequential([
-        Dense(256,input_dim=input_size),
-        Dropout(.3),
+        Dense(10,input_dim=input_size),
         LeakyReLU(),
-        BatchNormalization(),
     ],name="critic_{}".format(version))
 
     # Adding hidden layers
     for i in range(4):
-        model.add(Dense(256))
+        model.add(Dense(10))
         model.add(Dropout(.3))
         model.add(LeakyReLU())
         model.add(BatchNormalization())
 
     model.add(Dense(1, activation="tanh"))
 
-    model.summary()
 
     return model
 
@@ -119,7 +113,7 @@ def create_full_discriminator_model(critic,generator,noise_size=100):
         wasserstein_loss,
         wasserstein_loss
     ])
-
+    full_discriminator.summary()
     return full_discriminator
 
 def train_model(data,version = __MODEL_VERSION__,epochs = 200,steps_per_epoch=500,batch_size=5):
@@ -184,7 +178,7 @@ def train_model(data,version = __MODEL_VERSION__,epochs = 200,steps_per_epoch=50
     plt.clf()
 
     generate_fake_data(generator,version=version)
-
+    test_critic(data,critic,version=version)
 
 def get_total_particles():
     #For now, generation of number of particles in experiment
@@ -220,6 +214,14 @@ def plot_data(data:np.array,plot_title:str,filepath:str):
     plt.savefig(filepath)
     plt.clf()
 
+def test_critic(data,critic,version=__MODEL_VERSION__):
+
+    print("Generating critic plot.")
+    critic_results = critic.predict(data)
+
+    plot_data(critic_results, "r Results",
+              join("results", "v_{}_critic_result".format(version)))
+
 def generate_fake_data(generator:Model,visualized_experiments=5,generated_experiments=100,version=__MODEL_VERSION__):
 
 
@@ -241,11 +243,11 @@ def generate_fake_data(generator:Model,visualized_experiments=5,generated_experi
 
 
         plot_data(results_r,"r Experiment {}".format(i+1),
-                     join("results","r_result_experiment_{}_v_{}".format(i+1,version)))
+                     join("results","v_{}_r_result_experiment_{}".format(i+1,version)))
         plot_data(results_z, "z Experiment {}".format(i + 1),
-                     join("results", "z_result_experiment_{}_v_{}".format(i + 1, version)))
+                     join("results", "v_{}_z_result_experiment_{}".format(i + 1, version)))
         plot_data(results_e, "e Experiment {}".format(i + 1),
-                     join("results", "e_result_experiment_{}_v_{}".format(i + 1, version)))
+                     join("results", "v_{}_e_result_experiment_{}".format(i + 1, version)))
 
     print("Generating data ")
     for _ in tqdm(range(generated_experiments)):
@@ -264,11 +266,11 @@ def generate_fake_data(generator:Model,visualized_experiments=5,generated_experi
     tmp_data_z = np.array(tmp_data_z)
 
     plot_data(tmp_data_r,"r Results",
-                 join("results","r_result_all_v_{}".format(version)))
+                 join("results","v_{}_r_result_all".format(version)))
     plot_data(tmp_data_z, "z Results",
-                 join("results", "z_result_all_v_{}".format(version)))
+                 join("results", "v_{}_z_result_all".format(version)))
     plot_data(tmp_data_e, "e Results",
-                     join("results", "e_result_all_v_{}".format(version)))
+                     join("results", "v_{}_e_result_all".format(version)))
 
     np.save(join("results","results_r_array_v{}.npy".format(version)),tmp_data_r)
     np.save(join("results","results_e_array_v{}.npy".format(version)),tmp_data_e)
