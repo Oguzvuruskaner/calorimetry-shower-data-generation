@@ -1,6 +1,5 @@
 import numpy as np
 from sklearn.preprocessing import  StandardScaler
-import matplotlib.pyplot as plt
 from tqdm import tqdm
 import re
 from os import path,listdir,getcwd
@@ -9,9 +8,17 @@ from readRoot import create_all_inputs_file,\
     create_per_experiment_file
 from config import __DATASETS_WITH_OUTLIERS__ ,__DATASETS__
 import seaborn as sns
+from scripts.test_model import plot_data
 
 # scripts file include project specific
 # functionalities.
+
+def plot_all_data():
+
+    data = np.load(path.join("npy","triple_all.npy"))
+    plot_data(data[:,0],"All R Data",path.join("plots","all_r_data.png"))
+    plot_data(data[:,1],"All Z Data",path.join("plots","all_z_data.png"))
+    plot_data(data[:,2],"All E Data",path.join("plots","all_e_data.png"))
 
 
 
