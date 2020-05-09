@@ -1,1 +1,0 @@
-I suspect that our wasserstein implementation is faulty, generator does not converge.
