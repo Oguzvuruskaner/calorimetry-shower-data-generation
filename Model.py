@@ -1,22 +1,18 @@
-from keras.engine.saving import save_model
 from keras.models import Model,load_model
 from keras.layers import Input, Dense, BatchNormalization, Flatten, LeakyReLU, LocallyConnected1D, \
     Reshape, Dropout, concatenate
 from keras import backend as K, Sequential
 import numpy as np
 from os.path import join
-
 from keras.optimizers import Adam
 from keras.utils import plot_model
 from tqdm import tqdm
 from config import __MODEL_VERSION__
-import matplotlib.pyplot as plt
-import seaborn as sns
 from scripts.test_model import test_critic, generate_fake_data, plot_loss
 
 
 def wasserstein_loss(y_true, y_pred):
-    return K.mean(y_true * y_pred)
+    return K.mean(-y_true * y_pred)
 
 
 # As it is decided from the last conference,
@@ -154,8 +150,8 @@ def train_model(data,version = __MODEL_VERSION__,epochs = 50,steps_per_epoch=100
         discriminator_loss.append(np.mean(discriminator_tmp))
 
 
-    save_model(generator,join("models","gen{}_generator.h5".format(version)))
-    save_model(critic,join("models","gen{}_critic.h5".format(version)))
+    generator.save(join("models","gen{}_generator.h5".format(version)))
+    critic.save(join("models","gen{}_critic.h5".format(version)))
 
     plot_model(generator, join("models", "gen{}_generator_model.png".format(version))  ,show_shapes=True)
     plot_model(critic, join("models", "gen{}_critic_model.png".format(version)),show_shapes=True)
