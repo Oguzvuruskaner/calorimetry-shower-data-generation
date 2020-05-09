@@ -24,7 +24,7 @@ def create_npy_files():
 
     #Get all root files in root_files folder.
     root_files_directory = path.join(getcwd(),"root_files")
-    root_files = [path.join("../root_files", root_file) for root_file in listdir(root_files_directory)
+    root_files = [path.join("root_files", root_file) for root_file in listdir(root_files_directory)
                   if root_file.endswith(".root")]
 
     create_all_quadruple_file(root_files)
