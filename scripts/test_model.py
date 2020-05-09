@@ -1,3 +1,5 @@
+import pickle
+
 import numpy as np
 from keras.models import  Model
 from tqdm import tqdm
@@ -50,11 +52,11 @@ def show_stats(results:np.array):
 
     tmp = ""
     tmp += "Total Entities : {} \n".format(len(results))
-    tmp += "Mean : {0:10.3f} \n".format(results.mean())
-    tmp += "Std : {0:10.3f} \n".format(results.std())
-    tmp += "Variance : {0:10.3f}\n".format(results.std()**2)
-    tmp += "Min : {0:10.3f}\n".format(results.min())
-    tmp += "Max : {0:10.3f}\n".format(results.max())
+    tmp += "Mean : {0:10.3f} \n".format(np.mean(results))
+    tmp += "Std : {0:10.3f} \n".format(np.std(results))
+    tmp += "Variance : {0:10.3f}\n".format(np.std(results)**2)
+    tmp += "Min : {0:10.3f}\n".format(np.min(results))
+    tmp += "Max : {0:10.3f}\n".format(np.max(results))
     tmp += ".25 Quantile : {0:10.3f}\n".format(np.quantile(results,.25))
     tmp += ".50 Quantile : {0:10.3f}\n".format(np.quantile(results,.5))
     tmp += ".75 Quantile : {0:10.3f}\n".format(np.quantile(results,.75))
@@ -70,6 +72,10 @@ def get_total_particles():
 def generate_fake_data(generator:Model,visualized_experiments=5,generated_experiments=100,version=__MODEL_VERSION__):
 
 
+    r_scaler = pickle.load(open("r_scaler.pkl","rb"))
+    e_scaler = pickle.load(open("e_scaler.pkl","rb"))
+    z_scaler = pickle.load(open("z_scaler.pkl","rb"))
+
     tmp_data_r = []
     tmp_data_z = []
     tmp_data_e = []
@@ -77,9 +83,9 @@ def generate_fake_data(generator:Model,visualized_experiments=5,generated_experi
     print("Generating visualizations ")
     for i in tqdm(range(visualized_experiments)):
         results = generator.predict(np.random.normal(0,1,(get_total_particles(),100)))
-        results_r = results[:,0]
-        results_z = results[:,1]
-        results_e = results[:,2]
+        results_r = r_scaler.transform(results[:,0].reshape(-1,1)).reshape(-1,)
+        results_z = z_scaler.transform(results[:,1].reshape(-1,1)).reshape(-1,)
+        results_e = e_scaler.transform(results[:,2].reshape(-1,1)).reshape(-1,)
 
         for j in range(len(results_r)):
             tmp_data_r.append(results_r[j])
@@ -97,9 +103,9 @@ def generate_fake_data(generator:Model,visualized_experiments=5,generated_experi
     print("Generating data ")
     for _ in tqdm(range(generated_experiments)):
         results = generator.predict(np.random.normal(0,1,(get_total_particles(),100)))
-        results_r = results[:, 0]
-        results_z = results[:, 1]
-        results_e = results[:, 2]
+        results_r = r_scaler.transform(results[:,0].reshape(-1,1)).reshape(-1,)
+        results_z = z_scaler.transform(results[:,1].reshape(-1,1)).reshape(-1,)
+        results_e = e_scaler.transform(results[:,2].reshape(-1,1)).reshape(-1,)
 
         for i in range(len(results_r)):
             tmp_data_r.append(results_r[i])
@@ -110,11 +116,11 @@ def generate_fake_data(generator:Model,visualized_experiments=5,generated_experi
     tmp_data_e = np.array(tmp_data_e)
     tmp_data_z = np.array(tmp_data_z)
 
-    plot_data(tmp_data_r,"r Results",
+    plot_data(tmp_data_r.reshape((-1,)),"r Results",
                  join("results","v_{}_r_result_all".format(version)))
-    plot_data(tmp_data_z, "z Results",
+    plot_data(tmp_data_z.reshape((-1,)), "z Results",
                  join("results", "v_{}_z_result_all".format(version)))
-    plot_data(tmp_data_e, "e Results",
+    plot_data(tmp_data_e.reshape((-1,)), "e Results",
                      join("results", "v_{}_e_result_all".format(version)))
 
     np.save(join("results","results_r_array_v{}.npy".format(version)),tmp_data_r)
