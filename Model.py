@@ -1,18 +1,38 @@
+import pickle
+
 from keras.models import Model,load_model
 from keras.layers import Input, Dense, BatchNormalization, Flatten, LeakyReLU, LocallyConnected1D, \
     Reshape, Dropout, concatenate
 from keras import backend as K, Sequential
 import numpy as np
-from os.path import join
-from keras.optimizers import Adam
+import os
+from keras.optimizers import RMSprop
 from keras.utils import plot_model
+from sklearn.preprocessing import MinMaxScaler
 from tqdm import tqdm
 from config import __MODEL_VERSION__
 from scripts.test_model import test_critic, generate_fake_data, plot_loss
+from keras.constraints import Constraint
+from keras.activations import sigmoid
+
+#Taken by https://machinelearningmastery.com/how-to-code-a-wasserstein-generative-adversarial-network-wgan-from-scratch/
+class ClipConstraint(Constraint):
+
+    def __init__(self, clip_value):
+        self.clip_value = clip_value
+
+    def __call__(self, weights):
+        return K.clip(weights, -self.clip_value, self.clip_value)
+
+    def get_config(self):
+        return {'clip_value': self.clip_value}
+
+
+KERNEL_CONSTRAINT = ClipConstraint(clip_value=0.02)
 
 
 def wasserstein_loss(y_true, y_pred):
-    return K.mean(-y_true * y_pred)
+    return K.mean(y_true * y_pred)
 
 
 # As it is decided from the last conference,
@@ -24,18 +44,18 @@ def create_generator(input_size = 100,version=__MODEL_VERSION__):
     # Since z values may be negative,
     # Relu should be used only for r and e values.
     model = Sequential([
-        Dense(256,input_dim=input_size),
+        Dense(512,input_dim=input_size),
         LeakyReLU(),
     ],name="generator_{}".format(version))
 
     # Adding hidden layers
     for i in range(4):
-        model.add(Dense(256))
+        model.add(Dense(512))
         model.add(Dropout(.3))
         model.add(LeakyReLU())
         model.add(BatchNormalization())
 
-    model.add(Dense(3))
+    model.add(Dense(3,activation=sigmoid))
 
 
     return model
@@ -45,18 +65,18 @@ def create_critic(input_size=3,version=__MODEL_VERSION__):
 
 
     model = Sequential([
-        Dense(10,input_dim=input_size),
+        Dense(512,input_dim=input_size,kernel_constraint=KERNEL_CONSTRAINT),
         LeakyReLU(),
     ],name="critic_{}".format(version))
 
     # Adding hidden layers
     for i in range(4):
-        model.add(Dense(10))
+        model.add(Dense(512,kernel_constraint=KERNEL_CONSTRAINT))
         model.add(Dropout(.3))
         model.add(LeakyReLU())
         model.add(BatchNormalization())
 
-    model.add(Dense(1, activation="tanh"))
+    model.add(Dense(1,activation="tanh"))
 
 
     return model
@@ -80,7 +100,7 @@ def create_gan(generator:Model, critic:Model,noise_size=100):
 
     GAN = Model(inputs=[generator_input],outputs=[critic_generator_combined])
 
-    GAN.compile(optimizer=Adam(0.0001,beta_1=0.5,beta_2=0.9),loss=wasserstein_loss)
+    GAN.compile(optimizer=RMSprop(learning_rate=0.00005),loss=wasserstein_loss)
     GAN.summary()
 
     return GAN
@@ -95,17 +115,17 @@ def create_full_discriminator_model(critic,generator,noise_size=100):
         layer.trainable = False
     generator.trainable = False
 
-    fake_data_input = Input(shape=(noise_size,))
-    generator_with_input = generator(fake_data_input)
+    noise_input = Input(shape=(noise_size,))
+    generator_with_input = generator(noise_input)
     critic_with_fake_data = critic(generator_with_input)
 
     real_data_input = Input(shape=(3,))
     critic_with_real_data = critic(real_data_input)
 
-    full_discriminator = Model(inputs=[real_data_input,fake_data_input],
+    full_discriminator = Model(inputs=[real_data_input,noise_input],
                                outputs=[critic_with_real_data,critic_with_fake_data])
 
-    full_discriminator.compile(optimizer=Adam(0.0001,beta_1=0.5,beta_2=0.5),loss=[
+    full_discriminator.compile(optimizer=RMSprop(0.00005),loss=[
         wasserstein_loss,
         wasserstein_loss
     ])
@@ -113,7 +133,24 @@ def create_full_discriminator_model(critic,generator,noise_size=100):
     return full_discriminator
 
 
-def train_model(data,version = __MODEL_VERSION__,epochs = 50,steps_per_epoch=100,batch_size=5):
+
+def train_model(data,version = __MODEL_VERSION__,epochs = 200,steps_per_epoch=500,mini_batch_size=25):
+
+    r_scaler = MinMaxScaler()
+    z_scaler = MinMaxScaler()
+    e_scaler = MinMaxScaler()
+
+    r_scaler.fit(data[:,0].reshape(-1,1))
+    z_scaler.fit(data[:,1].reshape(-1,1))
+    e_scaler.fit(data[:,2].reshape(-1,1))
+
+    pickle.dump(r_scaler,open("r_scaler.pkl","wb"))
+    pickle.dump(z_scaler,open("z_scaler.pkl","wb"))
+    pickle.dump(e_scaler,open("e_scaler.pkl","wb"))
+
+    data[:,0] = r_scaler.transform(data[:,0].reshape(-1,1)).reshape((-1,))
+    data[:,1] = z_scaler.transform(data[:,1].reshape(-1,1)).reshape((-1,))
+    data[:,2] = e_scaler.transform(data[:,2].reshape(-1,1)).reshape((-1,))
 
     generator = create_generator()
 
@@ -121,56 +158,46 @@ def train_model(data,version = __MODEL_VERSION__,epochs = 50,steps_per_epoch=100
     gan = create_gan(generator,critic)
     full_discriminator = create_full_discriminator_model(critic,generator)
 
-    discriminator_loss = []
-    generator_loss = []
-
+    plot_list = []
 
     for _ in tqdm(range(epochs)):
 
-        discriminator_tmp = []
-        generator_tmp = []
+        critic_real_tmp = []
+        critic_fake_tmp = []
+        generated_loss_tmp = []
 
         for _ in range(steps_per_epoch):
 
-            indices_array = np.random.choice(np.arange(len(data)),batch_size)
+            indices_array = np.random.choice(np.arange(len(data)),mini_batch_size)
 
             true_input = data[indices_array]
-            fake_input = np.random.normal(0,1,(batch_size,100))
+            fake_input = np.random.normal(0,1,(mini_batch_size,100))
 
-            true_label = np.ones((batch_size,1))
+            true_label = -np.ones((mini_batch_size,1))
             fake_label = - true_label
 
-            train_result = full_discriminator.train_on_batch([true_input,fake_input],[true_label,fake_label])
-            discriminator_tmp.append(np.mean(train_result))
+            critic_real_loss,critic_fake_loss,_ = full_discriminator.train_on_batch([true_input,fake_input],[true_label,fake_label])
 
-            train_result = gan.train_on_batch([fake_input],[true_label])
-            generator_tmp.append(train_result)
+            critic_real_tmp.append(critic_fake_loss)
+            critic_fake_tmp.append(critic_fake_loss)
 
-        generator_loss.append(np.mean(generator_tmp))
-        discriminator_loss.append(np.mean(discriminator_tmp))
+            fake_input = np.random.normal(0,1,(mini_batch_size//5,100))
+            true_label = -np.ones((mini_batch_size//5,1))
 
+            generated_loss = gan.train_on_batch([fake_input],[true_label])
+            generated_loss_tmp.append(generated_loss)
 
-    generator.save(join("models","gen{}_generator.h5".format(version)))
-    critic.save(join("models","gen{}_critic.h5".format(version)))
+        plot_list.append((np.mean(critic_real_tmp),np.mean(critic_fake_tmp),np.mean(generated_loss_tmp)))
 
-    plot_model(generator, join("models", "gen{}_generator_model.png".format(version))  ,show_shapes=True)
-    plot_model(critic, join("models", "gen{}_critic_model.png".format(version)),show_shapes=True)
+    plot_loss(plot_list,os.path.join("results","v_{}_loss.png".format(version)))
 
-    plot_loss(generator_loss,epochs,"gen{}_generator_loss.png".format(version),"gen{}_generator Loss".format(version))
-    plot_loss(generator_loss,epochs,"gen{}_critic_loss.png".format(version),"gen{}_critic Loss".format(version))
+    generator.save(os.path.join("models","gen{}_generator.h5".format(version)))
+    critic.save(os.path.join("models","gen{}_critic.h5".format(version)))
+
+    plot_model(generator, os.path.join("models", "gen{}_generator_model.png".format(version))  ,show_shapes=True)
+    plot_model(critic, os.path.join("models", "gen{}_critic_model.png".format(version)),show_shapes=True)
+
     generate_fake_data(generator,version=version)
     test_critic(data,critic,version=version)
 
-
-
-
-
-def loadModel(model_path:str):
-
-    # For additional variables in the model,
-    # the developer should declare a dictionary
-
-    variable_dict = {}
-    model = load_model(model_path,variable_dict)
-    return model
 

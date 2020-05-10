@@ -37,16 +37,29 @@ def plot_data(data:np.array,plot_title:str,filepath:str):
     plt.savefig(filepath)
     plt.clf()
 
-def plot_loss(loss_array,epochs:int,model_name:str,plot_title:str):
+def plot_loss(loss_array,save_path:str):
+    # loss_array is an array of triple tuple.
+    # [0]: critic real data loss
+    # [1]: critic fake data loss
+    # [2]: generator loss
+    critic_real_loss_array = []
+    critic_fake_loss_array = []
+    generator_loss_array = []
+
+    for critic_real_loss,critic_fake_loss,generator_loss in loss_array:
+        critic_fake_loss_array.append(critic_fake_loss)
+        critic_real_loss_array.append(critic_real_loss)
+        generator_loss_array.append(generator_loss)
+
+    #Taken by https://machinelearningmastery.com/how-to-code-a-wasserstein-generative-adversarial-network-wgan-from-scratch/
     plt.clf()
-    plt.ylim((-1., 1.))
-    plt.xlim((0, epochs + 1))
-    plt.scatter(np.arange(epochs) + 1, loss_array)
-    plt.title(plot_title)
-    plt.xlabel("Epochs")
-    plt.ylabel("Loss")
-    plt.savefig(join("models", model_name))
+    plt.plot(critic_real_loss_array,label="critic_real")
+    plt.plot(critic_fake_loss_array,label="critic_fake")
+    plt.plot(generator_loss_array,label="generator")
+    plt.legend()
+    plt.savefig(save_path)
     plt.clf()
+
 
 def show_stats(results:np.array):
 
