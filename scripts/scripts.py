@@ -51,3 +51,12 @@ def filter_outliers(outlier_threshold=4):
         np.save(path.join("../npy", "{}_without_outliers.npy".format(dataset_name)), data)
 
 
+
+def create_jet_image_array(jet:np.array,resolution:int):
+
+    # x axis : hit_r
+    # y axis : hit_z
+    # weights : hit_e
+
+
+    return np.histogram2d(jet[:,0],jet[:,1],bins=resolution,weights=jet[:,2])
