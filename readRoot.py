@@ -19,9 +19,20 @@ def create_all_hits_file(pathList:[str]):
     :param pathList: List of root file paths.
     :return: None
     """
+    total_element = 0
+
+    for rootFile in pathList:
+
+        with uproot.open(rootFile) as root:
+            hit_x = np.array(root[__ROOT_DIRECTORY__][b"hit_x"].array())
+
+            for i in range(len(hit_x)):
+                total_element += len(hit_x[i])
 
 
-    quadruple_array = np.array([],dtype=np.float64)
+    all_hits = np.zeros((total_element,3))
+
+    current_element = 0
 
     for rootFile in pathList:
 
@@ -33,27 +44,16 @@ def create_all_hits_file(pathList:[str]):
             hit_e = np.array(root[__ROOT_DIRECTORY__][b"hit_e"].array())
 
 
-        currentElement = 0
-        for i in range(len(hit_x)):
-            currentElement += len(hit_x[i])
 
-        tmp = np.zeros((currentElement,3),dtype=np.float64)
-        currentElement = 0
+            for ind in tqdm(range(len(hit_x))):
 
-        for i in tqdm(range(len(hit_x))):
-            for x_exp,y_exp,z_exp, e_exp in zip(hit_x[i],hit_y[i], hit_z[i], hit_e[i]):
-                tmp[currentElement][0] = sqrt(x_exp*x_exp + y_exp*y_exp)
-                tmp[currentElement][1] = z_exp
-                tmp[currentElement][2] = e_exp
+                all_hits[current_element:current_element+len(hit_x[ind]),0] = np.sqrt(hit_x[ind]*hit_x[ind] + hit_y[ind]*hit_y[ind])
+                all_hits[current_element:current_element+len(hit_x[ind]),1] = hit_z[ind]
+                all_hits[current_element:current_element+len(hit_x[ind]),2] = hit_e[ind]
+                current_element += len(hit_x[ind])
 
-                currentElement += 1
-
-
-        quadruple_array = np.append(quadruple_array, tmp)
-
-    quadruple_array.resize((quadruple_array.size//3,3))
-    np.save(os.path.join("npy","triple_all.npy"), quadruple_array)
-
+    np.save(os.path.join("npy","triple_all.npy"), all_hits,allow_pickle=True)
+    print("Saving all hits file finished.")
 
 def create_per_jet_file(root_files:[str]):
 
