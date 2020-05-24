@@ -1,15 +1,19 @@
 import uproot
 import numpy as np
+from sklearn.preprocessing import StandardScaler
 from tqdm import tqdm
 from math import sqrt
 import os
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+
 
 __ROOT_DIRECTORY__ =  b"showers"
 
 MAX_COLLISION_IN_EXPERIMENT = 200000
 
 
-def create_all_quadruple_file(pathList:[str]):
+def create_all_hits_file(pathList:[str]):
     """
 
     :param pathList: List of root file paths.
@@ -64,7 +68,7 @@ def create_per_jet_file(root_files:[str]):
             hit_e = np.array(root[__ROOT_DIRECTORY__][b"hit_e"].array())
 
 
-        for i in range(len(hit_x)):
+        for i in tqdm(range(len(hit_x))):
             tmp_jet = np.zeros((len(hit_x[i]),3))
 
             for j in range(len(hit_x[i])):
