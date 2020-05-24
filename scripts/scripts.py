@@ -3,7 +3,7 @@ from sklearn.preprocessing import  StandardScaler
 from tqdm import tqdm
 import os
 from readRoot import create_all_hits_file
-from config import __DATASETS_WITH_OUTLIERS__ 
+from config import __DATASETS_WITH_OUTLIERS__
 from scripts.test_model import plot_data
 
 # scripts file include project specific

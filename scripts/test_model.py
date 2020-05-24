@@ -7,6 +7,7 @@ from config import __MODEL_VERSION__
 import seaborn as sns
 from os.path import join
 import matplotlib.pyplot as plt
+from matplotlib.colors import LogNorm
 
 
 
@@ -23,18 +24,40 @@ def test_critic(data,critic,version=__MODEL_VERSION__):
 
 
 
-def plot_data(data:np.array,plot_title:str,filepath:str):
-    plt.clf()
-    fig,(ax1,ax2) = plt.subplots(1,2)
-    sns.distplot(data,kde=False,ax=ax1)
-    ax1.set_title(plot_title)
-    ax2.set_title("Stats")
-    ax2.grid(False)
-    ax2.axes.xaxis.set_ticks([])
-    ax2.axes.yaxis.set_ticks([])
+def plot_data(data:np.array,plot_title:str,filepath:str,jet = False):
 
-    ax2.text(0.1,0.5,show_stats(data),clip_on=True)
-    plt.savefig(filepath)
+    plt.title(plot_title)
+
+    fig = plt.figure(constrained_layout = True,dpi=500)
+    fig.set_size_inches(20, 50)
+
+    if jet:
+        grid_spec = fig.add_gridspec(5,2)
+    else :
+        grid_spec = fig.add_gridspec(3,2)
+
+    for ind,feature in enumerate(["hit_r","hit_z","hit_e"]):
+        ax1 = fig.add_subplot(grid_spec[ind,0])
+        ax2 = fig.add_subplot(grid_spec[ind,1])
+
+        sns.distplot(data[:,ind],kde=False,ax=ax1)
+        ax1.set_title(feature)
+
+        ax2.set_title("{} Stats".format(feature))
+        ax2.grid(False)
+        ax2.axes.xaxis.set_ticks([])
+        ax2.axes.yaxis.set_ticks([])
+        ax2.text(0.1,0.5,show_stats(data),clip_on=True,fontsize=24)
+
+    if jet:
+        ax = fig.add_subplot(grid_spec[3:,:])
+        h = ax.hist2d(x=data[:,0],y=data[:,1],weights=data[:,2],bins=100,norm=LogNorm())
+        plt.colorbar(h[3], ax=ax)
+        ax.set_title("Jet image")
+        ax.set_xlabel("R")
+        ax.set_ylabel("Z")
+
+    plt.savefig(filepath,dpi=500)
     plt.clf()
 
 def plot_loss(loss_array,save_path:str):
@@ -89,54 +112,33 @@ def generate_fake_data(generator:Model,visualized_experiments=5,generated_experi
     e_scaler = pickle.load(open("e_scaler.pkl","rb"))
     z_scaler = pickle.load(open("z_scaler.pkl","rb"))
 
-    tmp_data_r = []
-    tmp_data_z = []
-    tmp_data_e = []
+    results = []
 
     print("Generating visualizations ")
-    for i in tqdm(range(visualized_experiments)):
-        results = generator.predict(np.random.normal(0,1,(get_total_particles(),100)))
-        results_r = r_scaler.transform(results[:,0].reshape(-1,1)).reshape(-1,)
-        results_z = z_scaler.transform(results[:,1].reshape(-1,1)).reshape(-1,)
-        results_e = e_scaler.transform(results[:,2].reshape(-1,1)).reshape(-1,)
-
-        for j in range(len(results_r)):
-            tmp_data_r.append(results_r[j])
-            tmp_data_e.append(results_e[j])
-            tmp_data_z.append(results_z[j])
+    for i in tqdm(range(1)):
+        tmp_results = generator.predict(np.random.normal(0,1,(get_total_particles(),100)))
+        tmp_results[:,0] = r_scaler.transform(tmp_results[:,0].reshape(-1,1)).reshape(-1,)
+        tmp_results[:,1] = z_scaler.transform(tmp_results[:,1].reshape(-1,1)).reshape(-1,)
+        tmp_results[:,2] = e_scaler.transform(tmp_results[:,2].reshape(-1,1)).reshape(-1,)
 
 
-        plot_data(results_r,"r Experiment {}".format(i+1),
-                     join("results","v_{}_r_result_experiment_{}".format(version,i+1)))
-        plot_data(results_z, "z Experiment {}".format(i + 1),
-                     join("results", "v_{}_z_result_experiment_{}".format(version,i+1)))
-        plot_data(results_e, "e Experiment {}".format(i + 1),
-                     join("results", "v_{}_e_result_experiment_{}".format( version,i+1)))
+        plot_data(tmp_results,"r Experiment {}".format(i+1),
+                     join("results","v_{}_result_experiment_{}".format(version,i+1)),jet=True)
+
+        results.extend(tmp_results)
+
 
     print("Generating data ")
-    for _ in tqdm(range(generated_experiments)):
-        results = generator.predict(np.random.normal(0,1,(get_total_particles(),100)))
-        results_r = r_scaler.transform(results[:,0].reshape(-1,1)).reshape(-1,)
-        results_z = z_scaler.transform(results[:,1].reshape(-1,1)).reshape(-1,)
-        results_e = e_scaler.transform(results[:,2].reshape(-1,1)).reshape(-1,)
+    # for _ in tqdm(range(generated_experiments)):
+    #     tmp_results = generator.predict(np.random.normal(0,1,(get_total_particles(),100)))
+    #     tmp_results[:, 0] = r_scaler.transform(tmp_results[:, 0].reshape(-1, 1)).reshape(-1, )
+    #     tmp_results[:, 1] = z_scaler.transform(tmp_results[:, 1].reshape(-1, 1)).reshape(-1, )
+    #     tmp_results[:, 2] = e_scaler.transform(tmp_results[:, 2].reshape(-1, 1)).reshape(-1, )
+    #
+    #     results.extend(tmp_results)
 
-        for i in range(len(results_r)):
-            tmp_data_r.append(results_r[i])
-            tmp_data_e.append(results_e[i])
-            tmp_data_z.append(results_z[i])
+    results = np.array(results)
+    plot_data(results,"r Results",
+                 join("results","v_{}_result_all".format(version)))
 
-    tmp_data_r = np.array(tmp_data_r)
-    tmp_data_e = np.array(tmp_data_e)
-    tmp_data_z = np.array(tmp_data_z)
-
-    plot_data(tmp_data_r.reshape((-1,)),"r Results",
-                 join("results","v_{}_r_result_all".format(version)))
-    plot_data(tmp_data_z.reshape((-1,)), "z Results",
-                 join("results", "v_{}_z_result_all".format(version)))
-    plot_data(tmp_data_e.reshape((-1,)), "e Results",
-                     join("results", "v_{}_e_result_all".format(version)))
-
-    np.save(join("results","results_r_array_v{}.npy".format(version)),tmp_data_r)
-    np.save(join("results","results_e_array_v{}.npy".format(version)),tmp_data_e)
-    np.save(join("results","results_z_array_v{}.npy".format(version)),tmp_data_z)
-
+    np.save(join("results","v_{}_result.npy".format(version)),results)
