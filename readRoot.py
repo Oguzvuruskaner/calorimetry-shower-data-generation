@@ -71,17 +71,11 @@ def create_per_jet_file(root_files:[str]):
         for i in tqdm(range(len(hit_x))):
             tmp_jet = np.zeros((len(hit_x[i]),3))
 
-            for j in range(len(hit_x[i])):
-                tmp_jet[j][0] = sqrt(hit_x[i][j] * hit_x[i][j] + hit_y[i][j] * hit_y[i][j])
-                tmp_jet[j][1] = hit_z[i][j]
-                tmp_jet[j][2] = hit_e[i][j]
+            tmp_jet[i:,0] = np.sqrt(hit_x[i]* hit_x[i] + hit_y[i] * hit_y[i])
+            tmp_jet[i:,1] = hit_z[i]
+            tmp_jet[i:,2] = hit_e[i]
 
             jet_list.append(tmp_jet)
 
-
-
     np.save(os.path.join("npy","per_jet_all.npy"),np.array(jet_list))
-
-
-
 
