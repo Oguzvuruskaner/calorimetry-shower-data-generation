@@ -49,7 +49,7 @@ def create_generator(input_size = 100,version=__MODEL_VERSION__):
     ],name="generator_{}".format(version))
 
     # Adding hidden layers
-    for i in range(4):
+    for i in range(8):
         model.add(Dense(512))
         model.add(Dropout(.3))
         model.add(LeakyReLU())
@@ -70,7 +70,7 @@ def create_critic(input_size=3,version=__MODEL_VERSION__):
     ],name="critic_{}".format(version))
 
     # Adding hidden layers
-    for i in range(4):
+    for i in range(6):
         model.add(Dense(512,kernel_constraint=KERNEL_CONSTRAINT))
         model.add(Dropout(.3))
         model.add(LeakyReLU())
@@ -140,7 +140,7 @@ def train_model(data,version = __MODEL_VERSION__,epochs = 200,steps_per_epoch=50
     z_scaler = MinMaxScaler()
     e_scaler = MinMaxScaler()
 
-    r_scaler.fit(data[:,0].reshape(-1,1))
+    r_scaler.fit_transform(data[:,0].reshape(-1,1))
     z_scaler.fit(data[:,1].reshape(-1,1))
     e_scaler.fit(data[:,2].reshape(-1,1))
 
@@ -191,8 +191,8 @@ def train_model(data,version = __MODEL_VERSION__,epochs = 200,steps_per_epoch=50
 
     plot_loss(plot_list,os.path.join("results","v_{}_loss.png".format(version)))
 
-    generator.save(os.path.join("models","gen{}_generator.h5".format(version)))
-    critic.save(os.path.join("models","gen{}_critic.h5".format(version)))
+    # generator.save(os.path.join("models","gen{}_generator.h5".format(version)))
+    # critic.save(os.path.join("models","gen{}_critic.h5".format(version)))
 
     plot_model(generator, os.path.join("models", "gen{}_generator_model.png".format(version))  ,show_shapes=True)
     plot_model(critic, os.path.join("models", "gen{}_critic_model.png".format(version)),show_shapes=True)
