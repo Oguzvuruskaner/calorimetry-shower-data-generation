@@ -1,8 +1,7 @@
 import pickle
 
 from keras.models import Model,load_model
-from keras.layers import Input, Dense, BatchNormalization, Flatten, LeakyReLU, LocallyConnected1D, \
-    Reshape, Dropout, concatenate
+from keras.layers import Input, Dense, BatchNormalization, LeakyReLU,Dropout, concatenate
 from keras import backend as K, Sequential
 import numpy as np
 import os
@@ -43,20 +42,41 @@ def create_generator(input_size = 100,version=__MODEL_VERSION__):
 
     # Since z values may be negative,
     # Relu should be used only for r and e values.
-    model = Sequential([
-        Dense(512,input_dim=input_size),
-        LeakyReLU(),
-    ],name="generator_{}".format(version))
+    # model = Sequential([
+    #     Dense(128,input_dim=input_size),
+    #     LeakyReLU(),
+    # ],name="generator_{}".format(version))
+    #
+    # # Adding hidden layers
+    # for i in range(8):
+    #
+    #     model.add(Dense(128))
+    #     model.add(Dropout(.3))
+    #     model.add(LeakyReLU())
+    #     model.add(BatchNormalization())
+    #
+    # model.add(Dense(3,activation=sigmoid))
 
-    # Adding hidden layers
-    for i in range(8):
-        model.add(Dense(512))
-        model.add(Dropout(.3))
-        model.add(LeakyReLU())
-        model.add(BatchNormalization())
+    input_layer = Input(shape=(input_size,))
+    x = Dense(128)(input_layer)
+    x = LeakyReLU()(x)
 
-    model.add(Dense(3,activation=sigmoid))
+    for i in range(5):
+        residual = Dense(128)(x)
+        residual = LeakyReLU()(residual)
+        residual = BatchNormalization()(residual)
+        residual = Dense(128)(residual)
+        residual = LeakyReLU()(residual)
+        residual = BatchNormalization()(residual)
+        residual = concatenate([x,residual])
+        residual = Dense(128)(residual)
+        residual = LeakyReLU()(residual)
+        x = BatchNormalization()(residual)
 
+
+    x = Dense(3, activation=sigmoid)(x)
+
+    model = Model(inputs=[input_layer],outputs=[x])
 
     return model
 
@@ -65,13 +85,13 @@ def create_critic(input_size=3,version=__MODEL_VERSION__):
 
 
     model = Sequential([
-        Dense(512,input_dim=input_size,kernel_constraint=KERNEL_CONSTRAINT),
+        Dense(128,input_dim=input_size,kernel_constraint=KERNEL_CONSTRAINT),
         LeakyReLU(),
     ],name="critic_{}".format(version))
 
     # Adding hidden layers
     for i in range(6):
-        model.add(Dense(512,kernel_constraint=KERNEL_CONSTRAINT))
+        model.add(Dense(128,kernel_constraint=KERNEL_CONSTRAINT))
         model.add(Dropout(.3))
         model.add(LeakyReLU())
         model.add(BatchNormalization())
@@ -135,12 +155,11 @@ def create_full_discriminator_model(critic,generator,noise_size=100):
 
 
 def train_model(data,version = __MODEL_VERSION__,epochs = 200,steps_per_epoch=500,mini_batch_size=25):
-
     r_scaler = MinMaxScaler()
     z_scaler = MinMaxScaler()
     e_scaler = MinMaxScaler()
 
-    r_scaler.fit_transform(data[:,0].reshape(-1,1))
+    r_scaler.fit(data[:,0].reshape(-1,1))
     z_scaler.fit(data[:,1].reshape(-1,1))
     e_scaler.fit(data[:,2].reshape(-1,1))
 
@@ -158,15 +177,13 @@ def train_model(data,version = __MODEL_VERSION__,epochs = 200,steps_per_epoch=50
     gan = create_gan(generator,critic)
     full_discriminator = create_full_discriminator_model(critic,generator)
 
-    plot_list = []
+    loss_data = np.zeros((epochs,3))
+    tmp_data = np.zeros((steps_per_epoch,3))
 
-    for _ in tqdm(range(epochs)):
 
-        critic_real_tmp = []
-        critic_fake_tmp = []
-        generated_loss_tmp = []
+    for epoch in tqdm(range(epochs)):
 
-        for _ in range(steps_per_epoch):
+        for step in range(steps_per_epoch):
 
             indices_array = np.random.choice(np.arange(len(data)),mini_batch_size)
 
@@ -178,21 +195,22 @@ def train_model(data,version = __MODEL_VERSION__,epochs = 200,steps_per_epoch=50
 
             critic_real_loss,critic_fake_loss,_ = full_discriminator.train_on_batch([true_input,fake_input],[true_label,fake_label])
 
-            critic_real_tmp.append(critic_fake_loss)
-            critic_fake_tmp.append(critic_fake_loss)
 
-            fake_input = np.random.normal(0,1,(mini_batch_size//5,100))
-            true_label = -np.ones((mini_batch_size//5,1))
+            fake_input = np.random.normal(0,1,(mini_batch_size//2,100))
+            true_label = -np.ones((mini_batch_size//2,1))
 
             generated_loss = gan.train_on_batch([fake_input],[true_label])
-            generated_loss_tmp.append(generated_loss)
 
-        plot_list.append((np.mean(critic_real_tmp),np.mean(critic_fake_tmp),np.mean(generated_loss_tmp)))
+            tmp_data[step,0] = critic_real_loss
+            tmp_data[step,1] = critic_fake_loss
+            tmp_data[step,2] = generated_loss
 
-    plot_loss(plot_list,os.path.join("results","v_{}_loss.png".format(version)))
+        loss_data[epoch,:] = np.mean(tmp_data.T,axis=1)
 
-    # generator.save(os.path.join("models","gen{}_generator.h5".format(version)))
-    # critic.save(os.path.join("models","gen{}_critic.h5".format(version)))
+    plot_loss(loss_data,os.path.join("results","v_{}_loss.png".format(version)))
+
+    generator.save(os.path.join("models","gen{}_generator.h5".format(version)))
+    critic.save(os.path.join("models","gen{}_critic.h5".format(version)))
 
     plot_model(generator, os.path.join("models", "gen{}_generator_model.png".format(version))  ,show_shapes=True)
     plot_model(critic, os.path.join("models", "gen{}_critic_model.png".format(version)),show_shapes=True)
