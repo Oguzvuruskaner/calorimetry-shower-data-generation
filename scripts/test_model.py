@@ -5,10 +5,9 @@ from keras.models import  Model
 from tqdm import tqdm
 from config import __MODEL_VERSION__
 import seaborn as sns
-from os.path import join
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
-
+import os
 
 
 PARTICLES_MEAN = 139356
@@ -17,12 +16,11 @@ PARTICLES_STD = 25077
 def test_critic(data,critic,version=__MODEL_VERSION__):
 
     print("Generating critic plot.")
-    critic_results = critic.predict(data)
+    critic_results = critic.predict(data,verbose=1)
 
-    plot_data(critic_results, "Critic predictions",
-              join("results", "v_{}_critic_result".format(version)))
-
-
+    sns.distplot(critic_results,kde=False)
+    plt.savefig(os.path.join("results","v_{}_critic_result.png".format(version)))
+    plt.clf()
 
 def plot_data(data:np.array,plot_title:str,filepath:str,jet = False):
 
@@ -65,20 +63,12 @@ def plot_loss(loss_array,save_path:str):
     # [0]: critic real data loss
     # [1]: critic fake data loss
     # [2]: generator loss
-    critic_real_loss_array = []
-    critic_fake_loss_array = []
-    generator_loss_array = []
-
-    for critic_real_loss,critic_fake_loss,generator_loss in loss_array:
-        critic_fake_loss_array.append(critic_fake_loss)
-        critic_real_loss_array.append(critic_real_loss)
-        generator_loss_array.append(generator_loss)
 
     #Taken by https://machinelearningmastery.com/how-to-code-a-wasserstein-generative-adversarial-network-wgan-from-scratch/
     plt.clf()
-    plt.plot(critic_real_loss_array,label="critic_real")
-    plt.plot(critic_fake_loss_array,label="critic_fake")
-    plt.plot(generator_loss_array,label="generator")
+    plt.plot(loss_array[:,0],label="critic_real")
+    plt.plot(loss_array[:,1],label="critic_fake")
+    plt.plot(loss_array[:,2],label="generator")
     plt.legend()
     plt.savefig(save_path)
     plt.clf()
@@ -115,7 +105,7 @@ def generate_fake_data(generator:Model,visualized_experiments=5,generated_experi
     results = []
 
     print("Generating visualizations ")
-    for i in tqdm(range(1)):
+    for i in tqdm(range(visualized_experiments)):
         tmp_results = generator.predict(np.random.normal(0,1,(get_total_particles(),100)))
         tmp_results[:,0] = r_scaler.transform(tmp_results[:,0].reshape(-1,1)).reshape(-1,)
         tmp_results[:,1] = z_scaler.transform(tmp_results[:,1].reshape(-1,1)).reshape(-1,)
@@ -123,22 +113,22 @@ def generate_fake_data(generator:Model,visualized_experiments=5,generated_experi
 
 
         plot_data(tmp_results,"r Experiment {}".format(i+1),
-                     join("results","v_{}_result_experiment_{}".format(version,i+1)),jet=True)
+                     os.path.join("results","v_{}_result_experiment_{}".format(version,i+1)),jet=True)
 
         results.extend(tmp_results)
 
 
     print("Generating data ")
-    # for _ in tqdm(range(generated_experiments)):
-    #     tmp_results = generator.predict(np.random.normal(0,1,(get_total_particles(),100)))
-    #     tmp_results[:, 0] = r_scaler.transform(tmp_results[:, 0].reshape(-1, 1)).reshape(-1, )
-    #     tmp_results[:, 1] = z_scaler.transform(tmp_results[:, 1].reshape(-1, 1)).reshape(-1, )
-    #     tmp_results[:, 2] = e_scaler.transform(tmp_results[:, 2].reshape(-1, 1)).reshape(-1, )
-    #
-    #     results.extend(tmp_results)
+    for _ in tqdm(range(generated_experiments)):
+        tmp_results = generator.predict(np.random.normal(0,1,(get_total_particles(),100)))
+        tmp_results[:, 0] = r_scaler.transform(tmp_results[:, 0].reshape(-1, 1)).reshape(-1, )
+        tmp_results[:, 1] = z_scaler.transform(tmp_results[:, 1].reshape(-1, 1)).reshape(-1, )
+        tmp_results[:, 2] = e_scaler.transform(tmp_results[:, 2].reshape(-1, 1)).reshape(-1, )
+
+        results.extend(tmp_results)
 
     results = np.array(results)
     plot_data(results,"r Results",
-                 join("results","v_{}_result_all".format(version)))
+                 os.path.join("results","v_{}_result_all".format(version)))
 
-    np.save(join("results","v_{}_result.npy".format(version)),results)
+    np.save(os.path.join("results","v_{}_prediction_array.npy".format(version)),results)
