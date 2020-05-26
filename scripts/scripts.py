@@ -4,17 +4,11 @@ from tqdm import tqdm
 import os
 from readRoot import create_all_hits_file
 from config import __DATASETS_WITH_OUTLIERS__
-from scripts.test_model import plot_data
+from scripts.test_model import show_stats
 
 # scripts file include project specific
 # functionalities.
 
-def plot_all_data():
-
-    data = np.load(os.path.join("npy","triple_all.npy"))
-    plot_data(data[:,0],"All R Data",os.path.join("plots","all_r_data.png"))
-    plot_data(data[:,1],"All Z Data",os.path.join("plots","all_z_data.png"))
-    plot_data(data[:,2],"All E Data",os.path.join("plots","all_e_data.png"))
 
 
 
@@ -61,3 +55,22 @@ def create_jet_image_array(jet:np.array,resolution:int):
 
 
     return np.histogram2d(jet[:,0],jet[:,1],bins=resolution,weights=jet[:,2])
+
+
+def create_jet_particles_plot(data):
+    import seaborn as sns
+    import matplotlib.pyplot as plt
+
+    shapes = np.zeros((data.shape[0], 1))
+
+    for i in range(len(data)):
+        shapes[i] = data[i].shape[0]
+
+    fig,[ax0,ax1] = plt.subplots(1,2)
+    fig.set_size_inches(20, 10)
+
+    sns.distplot(shapes,ax=ax0)
+    ax1.text(0.1, 0.5, show_stats(shapes), clip_on=True, fontsize=24)
+
+    plt.savefig(os.path.join("plots","jet_shapes"),dpi=500)
+    plt.clf()
