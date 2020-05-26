@@ -8,4 +8,4 @@ __DATA_MAPPING__ = [
     "hit_e"
 ]
 
-__MODEL_VERSION__ = 2
+__MODEL_VERSION__ = 4

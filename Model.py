@@ -1,5 +1,6 @@
 import pickle
 
+from keras.initializers import RandomNormal
 from keras.models import Model,load_model
 from keras.layers import Input, Dense, BatchNormalization, LeakyReLU,Dropout, concatenate
 from keras import backend as K, Sequential
@@ -28,6 +29,7 @@ class ClipConstraint(Constraint):
 
 
 KERNEL_CONSTRAINT = ClipConstraint(clip_value=0.02)
+KERNEL_INITIALIZER = RandomNormal()
 
 
 def wasserstein_loss(y_true, y_pred):
@@ -45,14 +47,14 @@ def create_generator(input_size = 100,version=__MODEL_VERSION__):
 
 
     model = Sequential([
-        Dense(128,input_dim=input_size),
+        Dense(128,input_dim=input_size,kernel_initializer = KERNEL_INITIALIZER,kernel_constraint=KERNEL_CONSTRAINT),
         LeakyReLU(),
     ],name="generator_{}".format(version))
 
     # Adding hidden layers
     for i in range(10):
 
-        model.add(Dense(128))
+        model.add(Dense(128,kernel_initializer = KERNEL_INITIALIZER,kernel_constraint=KERNEL_CONSTRAINT))
         model.add(Dropout(.3))
         model.add(LeakyReLU())
         model.add(BatchNormalization())
@@ -67,13 +69,13 @@ def create_critic(input_size=3,version=__MODEL_VERSION__):
 
 
     model = Sequential([
-        Dense(128,input_dim=input_size,kernel_constraint=KERNEL_CONSTRAINT),
+        Dense(128,input_dim=input_size,kernel_initializer = KERNEL_INITIALIZER,kernel_constraint=KERNEL_CONSTRAINT),
         LeakyReLU(),
     ],name="critic_{}".format(version))
 
     # Adding hidden layers
     for i in range(6):
-        model.add(Dense(128,kernel_constraint=KERNEL_CONSTRAINT))
+        model.add(Dense(128,kernel_initializer = KERNEL_INITIALIZER,kernel_constraint=KERNEL_CONSTRAINT))
         model.add(Dropout(.3))
         model.add(LeakyReLU())
         model.add(BatchNormalization())
