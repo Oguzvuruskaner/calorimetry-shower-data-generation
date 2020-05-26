@@ -45,7 +45,7 @@ def plot_data(data:np.array,plot_title:str,filepath:str,jet = False):
         ax2.grid(False)
         ax2.axes.xaxis.set_ticks([])
         ax2.axes.yaxis.set_ticks([])
-        ax2.text(0.1,0.5,show_stats(data),clip_on=True,fontsize=24)
+        ax2.text(0.1,0.5,show_stats(data[:,ind]),clip_on=True,fontsize=24)
 
     if jet:
         ax = fig.add_subplot(grid_spec[3:,:])
