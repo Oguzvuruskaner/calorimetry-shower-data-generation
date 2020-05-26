@@ -42,41 +42,23 @@ def create_generator(input_size = 100,version=__MODEL_VERSION__):
 
     # Since z values may be negative,
     # Relu should be used only for r and e values.
-    # model = Sequential([
-    #     Dense(128,input_dim=input_size),
-    #     LeakyReLU(),
-    # ],name="generator_{}".format(version))
-    #
-    # # Adding hidden layers
-    # for i in range(8):
-    #
-    #     model.add(Dense(128))
-    #     model.add(Dropout(.3))
-    #     model.add(LeakyReLU())
-    #     model.add(BatchNormalization())
-    #
-    # model.add(Dense(3,activation=sigmoid))
-
-    input_layer = Input(shape=(input_size,))
-    x = Dense(128)(input_layer)
-    x = LeakyReLU()(x)
-
-    for i in range(5):
-        residual = Dense(128)(x)
-        residual = LeakyReLU()(residual)
-        residual = BatchNormalization()(residual)
-        residual = Dense(128)(residual)
-        residual = LeakyReLU()(residual)
-        residual = BatchNormalization()(residual)
-        residual = concatenate([x,residual])
-        residual = Dense(128)(residual)
-        residual = LeakyReLU()(residual)
-        x = BatchNormalization()(residual)
 
 
-    x = Dense(3, activation=sigmoid)(x)
+    model = Sequential([
+        Dense(128,input_dim=input_size),
+        LeakyReLU(),
+    ],name="generator_{}".format(version))
 
-    model = Model(inputs=[input_layer],outputs=[x])
+    # Adding hidden layers
+    for i in range(10):
+
+        model.add(Dense(128))
+        model.add(Dropout(.3))
+        model.add(LeakyReLU())
+        model.add(BatchNormalization())
+
+    model.add(Dense(3,activation=sigmoid))
+
 
     return model
 
@@ -196,8 +178,8 @@ def train_model(data,version = __MODEL_VERSION__,epochs = 200,steps_per_epoch=50
             critic_real_loss,critic_fake_loss,_ = full_discriminator.train_on_batch([true_input,fake_input],[true_label,fake_label])
 
 
-            fake_input = np.random.normal(0,1,(mini_batch_size//2,100))
-            true_label = -np.ones((mini_batch_size//2,1))
+            fake_input = np.random.normal(0,1,(mini_batch_size//5,100))
+            true_label = -np.ones((mini_batch_size//5,1))
 
             generated_loss = gan.train_on_batch([fake_input],[true_label])
 
@@ -215,7 +197,7 @@ def train_model(data,version = __MODEL_VERSION__,epochs = 200,steps_per_epoch=50
     plot_model(generator, os.path.join("models", "gen{}_generator_model.png".format(version))  ,show_shapes=True)
     plot_model(critic, os.path.join("models", "gen{}_critic_model.png".format(version)),show_shapes=True)
 
-    generate_fake_data(generator,version=version)
-    test_critic(data,critic,version=version)
+    generate_fake_data(generator,generated_experiments=50,version=version)
+    test_critic(data[::100],critic,version=version)
 
 
