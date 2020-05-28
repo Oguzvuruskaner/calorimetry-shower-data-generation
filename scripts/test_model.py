@@ -1,14 +1,14 @@
+import os
 import pickle
-
 import numpy as np
+import seaborn as sns
+
+
 from keras.models import  Model
 from tqdm import tqdm
 from config import __MODEL_VERSION__
-import seaborn as sns
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
-import os
-
 
 PARTICLES_MEAN = 139356
 PARTICLES_STD = 25077
@@ -22,11 +22,19 @@ def test_critic(data,critic,version=__MODEL_VERSION__):
     plt.savefig(os.path.join("results","v_{}_critic_result.png".format(version)))
     plt.clf()
 
-def plot_data(data:np.array,plot_title:str,filepath:str,jet = False):
+def plot_data(
+        data:np.array,
+        plot_title:str,
+        filepath:str,
+        jet = False,
+        jet_bins=100,
+        logarithmic_x = False,
+        logarithmic_y = False,
+        dpi=500
+        ):
 
-    plt.title(plot_title)
 
-    fig = plt.figure(constrained_layout = True,dpi=500)
+    fig = plt.figure(constrained_layout = True,dpi=dpi)
     fig.set_size_inches(20, 50)
 
     if jet:
@@ -34,14 +42,17 @@ def plot_data(data:np.array,plot_title:str,filepath:str,jet = False):
     else :
         grid_spec = fig.add_gridspec(3,2)
 
+    fig.suptitle(plot_title, fontsize=24)
+
+
     for ind,feature in enumerate(["hit_r","hit_z","hit_e"]):
         ax1 = fig.add_subplot(grid_spec[ind,0])
         ax2 = fig.add_subplot(grid_spec[ind,1])
 
         sns.distplot(data[:,ind],kde=False,ax=ax1)
-        ax1.set_title(feature)
+        ax1.set_title(feature, fontsize=24)
 
-        ax2.set_title("{} Stats".format(feature))
+        ax2.set_title("{} Stats".format(feature), fontsize=24)
         ax2.grid(False)
         ax2.axes.xaxis.set_ticks([])
         ax2.axes.yaxis.set_ticks([])
@@ -49,14 +60,23 @@ def plot_data(data:np.array,plot_title:str,filepath:str,jet = False):
 
     if jet:
         ax = fig.add_subplot(grid_spec[3:,:])
-        h = ax.hist2d(x=data[:,0],y=data[:,1],weights=data[:,2],bins=100,norm=LogNorm())
-        plt.colorbar(h[3], ax=ax)
-        ax.set_title("Jet image")
-        ax.set_xlabel("R")
-        ax.set_ylabel("Z")
+        h = ax.hist2d(x=data[:,0],y=data[:,1],weights=data[:,2],bins=jet_bins,norm=LogNorm())
 
-    plt.savefig(filepath,dpi=500)
-    plt.clf()
+        colorbar = plt.colorbar(h[3], ax=ax)
+        colorbar.ax.set_title("GeV", fontsize=24)
+
+        ax.set_title("Jet image", fontsize=24)
+        ax.set_xlabel("R(cm)", fontsize=24)
+        ax.set_ylabel("Z(cm)", fontsize=24)
+
+        if logarithmic_x:
+            ax.set_xscale("log")
+
+        if logarithmic_y:
+            ax.set_yscale("log")
+
+    plt.savefig(filepath,dpi=dpi)
+    plt.close(fig)
 
 def plot_loss(loss_array,save_path:str):
     # loss_array is an array of triple tuple.
@@ -65,7 +85,6 @@ def plot_loss(loss_array,save_path:str):
     # [2]: generator loss
 
     #Taken by https://machinelearningmastery.com/how-to-code-a-wasserstein-generative-adversarial-network-wgan-from-scratch/
-    plt.clf()
     plt.plot(loss_array[:,0],label="critic_real")
     plt.plot(loss_array[:,1],label="critic_fake")
     plt.plot(loss_array[:,2],label="generator")
