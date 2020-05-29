@@ -1,28 +1,45 @@
-import numpy as np
-from sklearn.preprocessing import  StandardScaler
-from tqdm import tqdm
 import os
+
+
+import numpy as np
+from sklearn.preprocessing import StandardScaler
+from tqdm import tqdm
 from readRoot import create_all_hits_file
-from config import __DATASETS_WITH_OUTLIERS__
+from config import __DATASETS_WITH_OUTLIERS__, HIT_R_MAX, HIT_R_MIN, HIT_Z_MAX, HIT_Z_MIN
 from scripts.test_model import show_stats
+
+from config import DIMENSION
+
 
 # scripts file include project specific
 # functionalities.
 
+def scale_jets(jets:np.ndarray) -> None:
+
+    for jet in jets:
+        jet[:,0] = (jet[:,0] - HIT_R_MIN) / (HIT_R_MAX - HIT_R_MIN) * DIMENSION
+        jet[:,1] = (jet[:,1]  - HIT_Z_MIN) / (HIT_Z_MAX - HIT_Z_MIN) * DIMENSION
 
 
+
+def get_root_files():
+    return [
+        os.path.join("root_files", root_file)
+        for root_file in os.listdir("root_files")
+        if root_file.endswith(".root")
+    ]
 
 def create_npy_files():
 
     #Get all root files in root_files folder.
-    root_files_directory = os.path.join(os.getcwd(),"root_files")
     root_files = [
         os.path.join("root_files", root_file)
-        for root_file in os.listdir(root_files_directory)
+        for root_file in os.listdir("root_files")
         if root_file.endswith(".root")
     ]
 
     create_all_hits_file(root_files)
+    create
 
 
 def filter_outliers(outlier_threshold=4):
@@ -45,16 +62,6 @@ def filter_outliers(outlier_threshold=4):
         data.resize((data.size,1))
         np.save(os.path.join("../npy", "{}_without_outliers.npy".format(dataset_name)), data)
 
-
-
-def create_jet_image_array(jet:np.array,resolution:int):
-
-    # x axis : hit_r
-    # y axis : hit_z
-    # weights : hit_e
-
-
-    return np.histogram2d(jet[:,0],jet[:,1],bins=resolution,weights=jet[:,2])
 
 
 def create_jet_particles_plot(data):
