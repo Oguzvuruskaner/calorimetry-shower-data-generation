@@ -2,11 +2,12 @@ import os
 import pickle
 import numpy as np
 import seaborn as sns
+import math
 
-
+from PIL.Image import Image
 from keras.models import  Model
-from tqdm import tqdm
-from config import __MODEL_VERSION__
+from tqdm import tqdm, trange
+from config import __MODEL_VERSION__, DIMENSION
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 
@@ -42,7 +43,7 @@ def plot_data(
     else :
         grid_spec = fig.add_gridspec(3,2)
 
-    fig.suptitle(plot_title, fontsize=24)
+    fig.suptitle(plot_title, fontsize=72)
 
 
     for ind,feature in enumerate(["hit_r","hit_z","hit_e"]):
@@ -50,24 +51,24 @@ def plot_data(
         ax2 = fig.add_subplot(grid_spec[ind,1])
 
         sns.distplot(data[:,ind],kde=False,ax=ax1)
-        ax1.set_title(feature, fontsize=24)
+        ax1.set_title(feature, fontsize=64)
 
-        ax2.set_title("{} Stats".format(feature), fontsize=24)
+        ax2.set_title("{} Stats".format(feature), fontsize=64)
         ax2.grid(False)
         ax2.axes.xaxis.set_ticks([])
         ax2.axes.yaxis.set_ticks([])
-        ax2.text(0.1,0.5,show_stats(data[:,ind]),clip_on=True,fontsize=24)
+        ax2.text(0.1,0.5,show_stats(data[:,ind]),clip_on=True,fontsize=48)
 
     if jet:
         ax = fig.add_subplot(grid_spec[3:,:])
         h = ax.hist2d(x=data[:,0],y=data[:,1],weights=data[:,2],bins=jet_bins,norm=LogNorm())
 
         colorbar = plt.colorbar(h[3], ax=ax)
-        colorbar.ax.set_title("GeV", fontsize=24)
+        colorbar.ax.set_title("GeV", fontsize=64)
 
-        ax.set_title("Jet image", fontsize=24)
-        ax.set_xlabel("R(cm)", fontsize=24)
-        ax.set_ylabel("Z(cm)", fontsize=24)
+        ax.set_title("Jet image", fontsize=64)
+        ax.set_xlabel("R(cm)", fontsize=64)
+        ax.set_ylabel("Z(cm)", fontsize=64)
 
         if logarithmic_x:
             ax.set_xscale("log")
@@ -78,13 +79,51 @@ def plot_data(
     plt.savefig(filepath,dpi=dpi)
     plt.close(fig)
 
+def plot_jet_generator_train_results(epoch_results:np.array,save_path:str):
+    # loss_array is an array of triple tuple.
+    # [0]: critic real data loss
+    # [1]: critic fake data loss
+    # [2]: generator loss
+
+    plt.plot(epoch_results[:, 0], label="critic_real")
+    plt.plot(epoch_results[:, 1], label="critic_fake")
+    plt.plot(epoch_results[:, 2], label="generator")
+    plt.plot(epoch_results[:, 3], label="generator")
+
+    plt.legend()
+    plt.savefig(save_path)
+    plt.clf()
+
+def generate_jet_images(
+        generator : Model,
+        count=200,
+        root_dir=os.path.join("results","jet_images_{}".format(__MODEL_VERSION__))
+):
+    print("Generating jet images.")
+    noise_input_size = generator.inputs[0].shape.dims[1]
+
+    results = generator.predict(np.random.normal(size=(count,noise_input_size)))
+
+    for ind,result in tqdm(enumerate(results,start=1)):
+        image = result.reshape((DIMENSION,DIMENSION))
+
+        for i in range(len(image)):
+            for j in range(len(image[i])):
+                image[i][j] = 0 if image[i][j] == 0 else (math.log10(image[i][j]) + 8) * 32
+
+            image = np.array(image,dtype=np.uint8)
+            image = 255 - image
+
+            img = Image.fromarray(image,"L")
+            img.save(os.path.join(root_dir, "{}.png".format(ind)))
+
+
 def plot_loss(loss_array,save_path:str):
     # loss_array is an array of triple tuple.
     # [0]: critic real data loss
     # [1]: critic fake data loss
     # [2]: generator loss
 
-    #Taken by https://machinelearningmastery.com/how-to-code-a-wasserstein-generative-adversarial-network-wgan-from-scratch/
     plt.plot(loss_array[:,0],label="critic_real")
     plt.plot(loss_array[:,1],label="critic_fake")
     plt.plot(loss_array[:,2],label="generator")
@@ -124,7 +163,7 @@ def generate_fake_data(generator:Model,visualized_experiments=5,generated_experi
     results = []
 
     print("Generating visualizations ")
-    for i in tqdm(range(visualized_experiments)):
+    for i in trange(visualized_experiments):
         tmp_results = generator.predict(np.random.normal(0,1,(get_total_particles(),100)))
         tmp_results[:,0] = r_scaler.transform(tmp_results[:,0].reshape(-1,1)).reshape(-1,)
         tmp_results[:,1] = z_scaler.transform(tmp_results[:,1].reshape(-1,1)).reshape(-1,)
@@ -138,7 +177,7 @@ def generate_fake_data(generator:Model,visualized_experiments=5,generated_experi
 
 
     print("Generating data ")
-    for _ in tqdm(range(generated_experiments)):
+    for _ in trange(generated_experiments):
         tmp_results = generator.predict(np.random.normal(0,1,(get_total_particles(),100)))
         tmp_results[:, 0] = r_scaler.transform(tmp_results[:, 0].reshape(-1, 1)).reshape(-1, )
         tmp_results[:, 1] = z_scaler.transform(tmp_results[:, 1].reshape(-1, 1)).reshape(-1, )

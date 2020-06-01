@@ -39,7 +39,6 @@ def create_npy_files():
     ]
 
     create_all_hits_file(root_files)
-    create
 
 
 def filter_outliers(outlier_threshold=4):
