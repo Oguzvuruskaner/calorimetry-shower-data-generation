@@ -1,28 +1,35 @@
-from keras import Input,Dense
-from keras.models import  Model
+from keras.layers import Input,Dense
+from keras.models import  Model,Sequential
 
-class Encoder(Model):
+def create_encoder(input_size = 2,output_size=2):
 
-    def __init__(self):
-        super(Encoder,self).__init__()
+    model = Sequential()
 
 
-class Decoder(Model):
-
-    def __init__(self,input_size=4):
-
-        self.input_layer = Input(4)
+    return model
 
 
 
-class AutoEncoder(Model):
+def create_decoder(input_size = 2,output_size=2):
 
-    def __init__(self):
+    ...
 
-        super(AutoEncoder,self).__init__()
-        self.encoder = Encoder(),
-        self.decoder = Decoder()
 
-    def createEncoder(self):
 
-        ...
+
+def create_autoencoder(encoder:Model,decoder:Model):
+
+    model = Model(inputs=[encoder],outputs=[decoder(encoder)])
+
+    model.compile(optimizer="adam",loss=)
+
+
+def train(data,version):
+
+    encoder = create_encoder()
+    decoder = create_decoder()
+    autoencoder = create_autoencoder(encoder,decoder)
+
+
+
+    ...

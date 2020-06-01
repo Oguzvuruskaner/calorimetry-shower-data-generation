@@ -1,19 +1,26 @@
-from Model import train_model, create_critic, create_generator
-import numpy as np
+from AdvancedModel import train_model
 
-from scripts.samples import get_samples
-from test_critic import train_critic,train_with_generator
-from Model import wasserstein_loss
+import numpy as np
 import os
 
-from scripts.scripts import create_npy_files
+from scripts.scripts import scale_jets, get_root_files
+from readRoot import create_jet_images
+
+
 
 def main():
 
+    create_jet_images(get_root_files())
+    data = np.load(
+        os.path.join(
+            "npy",
+            "all_jet_images.npy"
+        ),
+        allow_pickle=True
 
+    )
+    train_model()
 
-    data = np.load(os.path.join("npy","triple_all_1000000.npy"))
-    train_model(data,1)
 
 if __name__ == "__main__":
 
