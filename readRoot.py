@@ -153,3 +153,56 @@ def create_jet_images(root_files: [str]):
             counter += 1
 
 
+def create_jet_image_array(root_files : [str]):
+
+    total_jets = 0
+
+    for rootFile in root_files:
+
+        with uproot.open(rootFile) as root:
+            hit_x = np.array(root[__ROOT_DIRECTORY__][b"hit_x"].array())
+
+            total_jets += len(hit_x)
+
+    all_jets = np.zeros((total_jets, DIMENSION,DIMENSION))
+    jet_counter = 0
+
+
+    for root_file in root_files:
+
+        with uproot.open(root_file) as root:
+            hit_x = np.array(root[__ROOT_DIRECTORY__][b"hit_x"].array())
+            hit_y = np.array(root[__ROOT_DIRECTORY__][b"hit_y"].array())
+            hit_z = np.array(root[__ROOT_DIRECTORY__][b"hit_z"].array())
+            hit_e = np.array(root[__ROOT_DIRECTORY__][b"hit_e"].array())
+
+        for i in tqdm(range(len(hit_x))):
+
+            tmp_jet = np.zeros((len(hit_x[i]), 3))
+
+            tmp_jet[:, 0] = np.sqrt(hit_x[i] * hit_x[i] + hit_y[i] * hit_y[i])
+            tmp_jet[:, 1] = hit_z[i]
+            tmp_jet[:, 2] = hit_e[i]
+
+            # I didn't use classical normalization
+            # Normalize globally.
+            tmp_jet[:, 0] = np.floor((tmp_jet[:, 0] - HIT_R_MIN) / (HIT_R_MAX - HIT_R_MIN) * DIMENSION)
+            tmp_jet[:, 1] = np.floor((tmp_jet[:, 1] - HIT_Z_MIN) / (HIT_Z_MAX - HIT_Z_MIN) * DIMENSION)
+
+
+
+            # Normalizing energy values.
+            # It is known that total energy of jets is 50 GeV.
+            all_jets[jet_counter] = np.histogram2d(
+                x = tmp_jet[:, 0],
+                y = tmp_jet[:, 1],
+                weights = tmp_jet[:,2],
+                bins = DIMENSION
+            )[0] / 50
+            jet_counter += 1
+
+
+    np.save(
+        os.path.join("npy","all_jet_images.npy"),
+        all_jets,
+        allow_pickle=True)
