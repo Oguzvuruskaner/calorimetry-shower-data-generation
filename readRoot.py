@@ -2,7 +2,7 @@ import uproot
 import numpy as np
 from tqdm import tqdm
 import os
-from config import HIT_R_MAX,HIT_R_MIN,HIT_Z_MAX,HIT_Z_MIN
+from config import HIT_R_MAX,HIT_R_MIN,HIT_Z_MAX,HIT_Z_MIN,DIMENSION
 from PIL import Image
 import math
 
@@ -12,7 +12,6 @@ from scripts.test_model import plot_data
 
 MAX_COLLISION_IN_EXPERIMENT = 200000
 
-DIMENSION = 100
 
 
 def create_all_hits_file(pathList:[str]):
