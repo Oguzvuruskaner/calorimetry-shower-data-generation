@@ -12,7 +12,7 @@ def main():
         "npy","all_jet_images.npy"
     ),allow_pickle=True)
 
-    train_model(data,epochs=50,steps=10)
+    train_model(data,epochs=75,steps=40,mini_batch_size=10)
 
 
 

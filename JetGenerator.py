@@ -15,7 +15,7 @@ NOISE_INPUT_SIZE = 100
 
 
 def wasserstein_loss(y_true, y_pred):
-    return tf.keras.backend.mean(y_true * y_pred)
+    return tf.keras.backend.mean(-y_true * y_pred)
 
 
 class ClipConstraint(tf.keras.constraints.Constraint):
@@ -31,7 +31,7 @@ class ClipConstraint(tf.keras.constraints.Constraint):
 
 
 KERNEL_CONSTRAINT = ClipConstraint(clip_value=0.02)
-OPTIMIZER = tf.keras.optimizers.RMSprop(.00001)
+OPTIMIZER = tf.keras.optimizers.RMSprop(.0005)
 
 
 def create_critic() -> tf.keras.Model:
@@ -40,26 +40,31 @@ def create_critic() -> tf.keras.Model:
         tf.keras.layers.Input(shape=(DIMENSION * DIMENSION,)),
         tf.keras.layers.Reshape((DIMENSION,DIMENSION,1)),
 
-        tf.keras.layers.ZeroPadding2D(),
-        tf.keras.layers.LocallyConnected2D(16,(3,3),kernel_constraint=KERNEL_CONSTRAINT),
+        tf.keras.layers.ZeroPadding2D((2,2)),
+        tf.keras.layers.LocallyConnected2D(9,(5,5)),
         tf.keras.layers.LeakyReLU(),
-        tf.keras.layers.BatchNormalization(),
-        tf.keras.layers.MaxPooling2D(),
+        tf.keras.layers.LayerNormalization(),
+        tf.keras.layers.Dropout(0.4),
 
-        tf.keras.layers.ZeroPadding2D((1, 1)),
-        tf.keras.layers.LocallyConnected2D(16, (3,3),kernel_constraint=KERNEL_CONSTRAINT),
+        tf.keras.layers.ZeroPadding2D((2,2)),
+        tf.keras.layers.LocallyConnected2D(9, (5,5)),
         tf.keras.layers.LeakyReLU(),
-        tf.keras.layers.BatchNormalization(),
-        tf.keras.layers.MaxPooling2D(),
+        tf.keras.layers.LayerNormalization(),
+        tf.keras.layers.Dropout(0.4),
+
+
+        tf.keras.layers.LocallyConnected2D(8,(3,3)),
+        tf.keras.layers.LeakyReLU(),
+        tf.keras.layers.LayerNormalization(),
+        tf.keras.layers.AveragePooling2D(),
+
+        tf.keras.layers.LocallyConnected2D(8, (3, 3)),
+        tf.keras.layers.LeakyReLU(),
+        tf.keras.layers.LayerNormalization(),
+        tf.keras.layers.AveragePooling2D(),
 
         tf.keras.layers.Flatten(),
-        tf.keras.layers.Dense(DIMENSION,kernel_constraint=KERNEL_CONSTRAINT),
-        tf.keras.layers.LeakyReLU(),
-        tf.keras.layers.BatchNormalization(),
 
-        tf.keras.layers.Dense(DIMENSION,kernel_constraint=KERNEL_CONSTRAINT),
-        tf.keras.layers.LeakyReLU(),
-        tf.keras.layers.BatchNormalization(),
 
         tf.keras.layers.Dense(1,activation="tanh",kernel_constraint=KERNEL_CONSTRAINT)
 
@@ -85,19 +90,25 @@ def create_generator(noise_input_size = NOISE_INPUT_SIZE) -> tf.keras.Model:
         tf.keras.layers.LayerNormalization(),
         tf.keras.layers.UpSampling2D((2,2)),
 
-        tf.keras.layers.ZeroPadding2D(),
-        tf.keras.layers.LocallyConnected2D(6,(3,3),kernel_constraint=KERNEL_CONSTRAINT),
+        tf.keras.layers.ZeroPadding2D((2,2)),
+        tf.keras.layers.LocallyConnected2D(6,(5,5),kernel_constraint=KERNEL_CONSTRAINT),
         tf.keras.layers.LeakyReLU(),
         tf.keras.layers.LayerNormalization(),
         tf.keras.layers.UpSampling2D(),
 
-        tf.keras.layers.ZeroPadding2D(),
-        tf.keras.layers.LocallyConnected2D(6,(3,3),kernel_constraint=KERNEL_CONSTRAINT),
+        tf.keras.layers.ZeroPadding2D((2,2)),
+        tf.keras.layers.LocallyConnected2D(6,(5,5),kernel_constraint=KERNEL_CONSTRAINT),
         tf.keras.layers.LeakyReLU(),
         tf.keras.layers.LayerNormalization(),
 
-        tf.keras.layers.ZeroPadding2D((1, 1)),
-        tf.keras.layers.LocallyConnected2D(1,(3,3),activation="relu",kernel_constraint=KERNEL_CONSTRAINT),
+        tf.keras.layers.ZeroPadding2D((2, 2)),
+        tf.keras.layers.LocallyConnected2D(6,(5,5),kernel_constraint=KERNEL_CONSTRAINT),
+        tf.keras.layers.LeakyReLU(),
+        tf.keras.layers.LayerNormalization(),
+
+        tf.keras.layers.ZeroPadding2D((2, 2)),
+        tf.keras.layers.LocallyConnected2D(1, (5, 5), activation="sigmoid", kernel_constraint=KERNEL_CONSTRAINT),
+
         tf.keras.layers.Flatten()
 
     ],name="v{}_jet_generator".format(__MODEL_VERSION__))
@@ -196,7 +207,7 @@ def train_model(data,epochs=200,steps = 500,mini_batch_size=50):
         for step in range(steps):
 
             critic_fake_input = np.random.normal(size=(mini_batch_size,NOISE_INPUT_SIZE))
-            generator_predict_input = np.random.normal(size=(mini_batch_size//10,NOISE_INPUT_SIZE))
+            generator_predict_input = np.random.normal(size=(mini_batch_size//5,NOISE_INPUT_SIZE))
 
             step_losses[step, 0] = critic_real.train_on_batch(
                 x_train[np.random.choice(len(x_train), mini_batch_size)],
@@ -206,7 +217,7 @@ def train_model(data,epochs=200,steps = 500,mini_batch_size=50):
 
 
             step_losses[step,1] = real_gan.train_on_batch(critic_fake_input,np.ones((mini_batch_size,1)))
-            step_losses[step,2] = fake_gan.train_on_batch(generator_predict_input,-np.ones((mini_batch_size//10,1)))
+            step_losses[step,2] = fake_gan.train_on_batch(generator_predict_input,-np.ones((mini_batch_size//5,1)))
 
 
         epoch_losses[epoch,:3] = np.mean(step_losses.T,axis=1)
