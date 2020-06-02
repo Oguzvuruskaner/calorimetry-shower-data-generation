@@ -41,27 +41,27 @@ def create_critic() -> tf.keras.Model:
         tf.keras.layers.Reshape((DIMENSION,DIMENSION,1)),
 
         tf.keras.layers.ZeroPadding2D(),
-        tf.keras.layers.LocallyConnected2D(16,(3,3)),
+        tf.keras.layers.LocallyConnected2D(16,(3,3),kernel_constraint=KERNEL_CONSTRAINT),
         tf.keras.layers.LeakyReLU(),
         tf.keras.layers.BatchNormalization(),
         tf.keras.layers.MaxPooling2D(),
 
         tf.keras.layers.ZeroPadding2D((1, 1)),
-        tf.keras.layers.LocallyConnected2D(16, (3,3)),
+        tf.keras.layers.LocallyConnected2D(16, (3,3),kernel_constraint=KERNEL_CONSTRAINT),
         tf.keras.layers.LeakyReLU(),
         tf.keras.layers.BatchNormalization(),
         tf.keras.layers.MaxPooling2D(),
 
         tf.keras.layers.Flatten(),
-        tf.keras.layers.Dense(DIMENSION),
+        tf.keras.layers.Dense(DIMENSION,kernel_constraint=KERNEL_CONSTRAINT),
         tf.keras.layers.LeakyReLU(),
         tf.keras.layers.BatchNormalization(),
 
-        tf.keras.layers.Dense(DIMENSION),
+        tf.keras.layers.Dense(DIMENSION,kernel_constraint=KERNEL_CONSTRAINT),
         tf.keras.layers.LeakyReLU(),
         tf.keras.layers.BatchNormalization(),
 
-        tf.keras.layers.Dense(1,activation="tanh")
+        tf.keras.layers.Dense(1,activation="tanh",kernel_constraint=KERNEL_CONSTRAINT)
 
     ],name="v{}_jet_critic".format(__MODEL_VERSION__))
 
@@ -80,24 +80,24 @@ def create_generator(noise_input_size = NOISE_INPUT_SIZE) -> tf.keras.Model:
         tf.keras.layers.Dense(DIMENSION * DIMENSION * 2),
         tf.keras.layers.Reshape((DIMENSION//4,DIMENSION//4,32)),
 
-        tf.keras.layers.Conv2D(32,(5,5),padding="same"),
+        tf.keras.layers.Conv2D(32,(5,5),padding="same",kernel_constraint=KERNEL_CONSTRAINT),
         tf.keras.layers.LeakyReLU(),
         tf.keras.layers.LayerNormalization(),
         tf.keras.layers.UpSampling2D((2,2)),
 
         tf.keras.layers.ZeroPadding2D(),
-        tf.keras.layers.LocallyConnected2D(6,(3,3)),
+        tf.keras.layers.LocallyConnected2D(6,(3,3),kernel_constraint=KERNEL_CONSTRAINT),
         tf.keras.layers.LeakyReLU(),
         tf.keras.layers.LayerNormalization(),
         tf.keras.layers.UpSampling2D(),
 
         tf.keras.layers.ZeroPadding2D(),
-        tf.keras.layers.LocallyConnected2D(6,(3,3)),
+        tf.keras.layers.LocallyConnected2D(6,(3,3),kernel_constraint=KERNEL_CONSTRAINT),
         tf.keras.layers.LeakyReLU(),
         tf.keras.layers.LayerNormalization(),
 
         tf.keras.layers.ZeroPadding2D((1, 1)),
-        tf.keras.layers.LocallyConnected2D(1,(3,3),activation="relu"),
+        tf.keras.layers.LocallyConnected2D(1,(3,3),activation="relu",kernel_constraint=KERNEL_CONSTRAINT),
         tf.keras.layers.Flatten()
 
     ],name="v{}_jet_generator".format(__MODEL_VERSION__))
