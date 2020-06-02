@@ -8,7 +8,7 @@ __DATA_MAPPING__ = [
     "hit_e"
 ]
 
-__MODEL_VERSION__ = 1
+__MODEL_VERSION__ = 2
 
 HIT_Z_MAX = 1001
 HIT_Z_MIN = -1000

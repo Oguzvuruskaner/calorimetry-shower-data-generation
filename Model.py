@@ -15,7 +15,6 @@ from scripts.test_model import test_critic, generate_fake_data, plot_loss
 from keras.constraints import Constraint
 from keras.activations import sigmoid
 
-#Taken by https://machinelearningmastery.com/how-to-code-a-wasserstein-generative-adversarial-network-wgan-from-scratch/
 class ClipConstraint(Constraint):
 
     def __init__(self, clip_value):

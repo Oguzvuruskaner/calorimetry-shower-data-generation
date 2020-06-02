@@ -31,7 +31,7 @@ class ClipConstraint(tf.keras.constraints.Constraint):
 
 
 KERNEL_CONSTRAINT = ClipConstraint(clip_value=0.02)
-OPTIMIZER = "adam"
+OPTIMIZER = tf.keras.optimizers.RMSprop(.00001)
 
 
 def create_critic() -> tf.keras.Model:
