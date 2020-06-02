@@ -15,7 +15,7 @@ NOISE_INPUT_SIZE = 100
 
 
 def wasserstein_loss(y_true, y_pred):
-    return tf.keras.backend.mean(-y_true * y_pred)
+    return tf.keras.backend.mean(y_true * y_pred)
 
 
 class ClipConstraint(tf.keras.constraints.Constraint):
@@ -107,7 +107,7 @@ def create_generator(noise_input_size = NOISE_INPUT_SIZE) -> tf.keras.Model:
         tf.keras.layers.LayerNormalization(),
 
         tf.keras.layers.ZeroPadding2D((2, 2)),
-        tf.keras.layers.LocallyConnected2D(1, (5, 5), activation="sigmoid", kernel_constraint=KERNEL_CONSTRAINT),
+        tf.keras.layers.LocallyConnected2D(1, (5, 5), activation="sigmoid"),
 
         tf.keras.layers.Flatten()
 
