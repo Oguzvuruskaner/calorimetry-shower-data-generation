@@ -4,7 +4,8 @@ import numpy as np
 import seaborn as sns
 import math
 
-from PIL.Image import Image
+from PIL import Image
+
 from keras.models import  Model
 from tqdm import tqdm, trange
 from config import __MODEL_VERSION__, DIMENSION
@@ -88,7 +89,7 @@ def plot_jet_generator_train_results(epoch_results:np.array,save_path:str):
     plt.plot(epoch_results[:, 0], label="critic_real")
     plt.plot(epoch_results[:, 1], label="critic_fake")
     plt.plot(epoch_results[:, 2], label="generator")
-    plt.plot(epoch_results[:, 3], label="generator")
+    plt.plot(epoch_results[:, 3], label="critic_evaluate")
 
     plt.legend()
     plt.savefig(save_path)
@@ -99,23 +100,39 @@ def generate_jet_images(
         count=200,
         root_dir=os.path.join("results","jet_images_{}".format(__MODEL_VERSION__))
 ):
+
+    if not os.path.exists(root_dir):
+        os.mkdir(root_dir)
+
     print("Generating jet images.")
     noise_input_size = generator.inputs[0].shape.dims[1]
 
     results = generator.predict(np.random.normal(size=(count,noise_input_size)))
 
     for ind,result in tqdm(enumerate(results,start=1)):
-        image = result.reshape((DIMENSION,DIMENSION))
+        image = result.reshape((DIMENSION,DIMENSION)) * 50
 
-        for i in range(len(image)):
-            for j in range(len(image[i])):
-                image[i][j] = 0 if image[i][j] == 0 else (math.log10(image[i][j]) + 8) * 32
+        save_jet_image(image,os.path.join(root_dir, "{}.png".format(ind)))
 
-            image = np.array(image,dtype=np.uint8)
-            image = 255 - image
 
-            img = Image.fromarray(image,"L")
-            img.save(os.path.join(root_dir, "{}.png".format(ind)))
+
+def save_jet_image(
+        image:np.array,
+        path:str
+):
+
+    for i in range(len(image)):
+        for j in range(len(image[i])):
+            image[i][j] = 0 if image[i][j] == 0 else (math.log10(image[i][j]) + 8) * 25
+
+
+    image = np.array(image, dtype=np.uint8)
+    image = 255 - image
+
+    img = Image.fromarray(image, "L")
+    img.save(path)
+
+
 
 
 def plot_loss(loss_array,save_path:str):

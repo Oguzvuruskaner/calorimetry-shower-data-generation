@@ -8,7 +8,7 @@ import math
 
 __ROOT_DIRECTORY__ =  b"showers"
 
-from scripts.test_model import plot_data
+from scripts.test_model import plot_data, save_jet_image
 
 MAX_COLLISION_IN_EXPERIMENT = 200000
 
@@ -137,17 +137,7 @@ def create_jet_images(root_files: [str]):
                 image[int(z),int(r)] += e
 
 
-            # Image is divided by since it is
-            # 50 GeV
-            for i in range(len(image)):
-                for j in range(len(image[i])):
-                    image[i][j] = 0 if image[i][j] == 0 else (math.log10(image[i][j])+8)*32
-
-            image = np.array(image,dtype=np.uint8)
-            image = 255 - image
-
-            img = Image.fromarray(image,"L")
-            img.save(os.path.join("jet_images","images", "{}.png".format(counter)))
+            save_jet_image(image,os.path.join("jet_images","images", "{}.png".format(counter)))
 
             counter += 1
 
@@ -187,17 +177,14 @@ def create_jet_image_array(root_files : [str]):
             # Normalize globally.
             tmp_jet[:, 0] = np.floor((tmp_jet[:, 0] - HIT_R_MIN) / (HIT_R_MAX - HIT_R_MIN) * DIMENSION)
             tmp_jet[:, 1] = np.floor((tmp_jet[:, 1] - HIT_Z_MIN) / (HIT_Z_MAX - HIT_Z_MIN) * DIMENSION)
+            tmp_jet[:,2] /= 50
 
 
+            for r,z,e in tmp_jet:
+                all_jets[jet_counter,int(z),int(r)] += e
 
             # Normalizing energy values.
             # It is known that total energy of jets is 50 GeV.
-            all_jets[jet_counter] = np.histogram2d(
-                x = tmp_jet[:, 0],
-                y = tmp_jet[:, 1],
-                weights = tmp_jet[:,2],
-                bins = DIMENSION
-            )[0] / 50
             jet_counter += 1
 
 
