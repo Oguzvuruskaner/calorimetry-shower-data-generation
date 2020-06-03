@@ -31,10 +31,9 @@ class ClipConstraint(tf.keras.constraints.Constraint):
 
 
 
-KERNEL_INITIALIZER = tf.keras.initializers.RandomNormal(seed=int(time.time()))
-OPTIMIZER = tf.keras.optimizers.Adam(0.001)
-KERNEL_CONSTRAINT = None
-
+KERNEL_INITIALIZER = tf.keras.initializers.RandomNormal(seed = int(time.time()))
+KERNEL_CONSTRAINT = ClipConstraint(clip_value=0.1)
+OPTIMIZER = tf.keras.optimizers.Adam(.0005)
 
 def create_critic() -> tf.keras.Model:
 
@@ -164,8 +163,6 @@ def train_model(data,epochs=200,steps = 500,mini_batch_size=50,save_results = Tr
     critic_real,critic_gan,generator_gan = create_gan(critic,generator)
 
     data = data.reshape((len(data),DIMENSION*DIMENSION))
-
-
 
     epoch_losses = np.zeros((epochs,4))
     step_losses = np.zeros((steps,3))
