@@ -126,6 +126,7 @@ def save_jet_image(
             image[i][j] = 0 if image[i][j] == 0 else (math.log10(image[i][j]) + 8) * 25
 
 
+
     image = np.array(image, dtype=np.uint8)
     image = 255 - image
 
