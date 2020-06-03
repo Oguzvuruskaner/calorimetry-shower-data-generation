@@ -42,13 +42,7 @@ def create_critic() -> tf.keras.Model:
         tf.keras.layers.LeakyReLU(),
         tf.keras.layers.Dropout(0.4),
 
-        tf.keras.layers.Dense(1024, kernel_constraint=KERNEL_CONSTRAINT, kernel_initializer=KERNEL_INITIALIZER),
-        tf.keras.layers.LeakyReLU(),
-        tf.keras.layers.Dropout(0.4),
 
-        tf.keras.layers.Dense(1024, kernel_constraint=KERNEL_CONSTRAINT, kernel_initializer=KERNEL_INITIALIZER),
-        tf.keras.layers.LeakyReLU(),
-        tf.keras.layers.Dropout(0.4),
 
         tf.keras.layers.Dense(1024,kernel_constraint=KERNEL_CONSTRAINT,kernel_initializer=KERNEL_INITIALIZER),
         tf.keras.layers.LeakyReLU(),
@@ -86,6 +80,7 @@ def create_generator(noise_input_size = NOISE_INPUT_SIZE) -> tf.keras.Model:
         tf.keras.layers.PReLU(),
         tf.keras.layers.Dropout(0.4),
 
+
         tf.keras.layers.Dense(256, kernel_constraint=KERNEL_CONSTRAINT,kernel_initializer=KERNEL_INITIALIZER),
         tf.keras.layers.PReLU(),
         tf.keras.layers.Dropout(0.4),
@@ -99,6 +94,14 @@ def create_generator(noise_input_size = NOISE_INPUT_SIZE) -> tf.keras.Model:
         tf.keras.layers.Dropout(0.4),
 
         tf.keras.layers.Dense(1024,kernel_constraint=KERNEL_CONSTRAINT,kernel_initializer=KERNEL_INITIALIZER),
+        tf.keras.layers.PReLU(),
+        tf.keras.layers.Dropout(0.4),
+
+        tf.keras.layers.Dense(1024, kernel_constraint=KERNEL_CONSTRAINT, kernel_initializer=KERNEL_INITIALIZER),
+        tf.keras.layers.PReLU(),
+        tf.keras.layers.Dropout(0.4),
+
+        tf.keras.layers.Dense(1024, kernel_constraint=KERNEL_CONSTRAINT, kernel_initializer=KERNEL_INITIALIZER),
         tf.keras.layers.PReLU(),
         tf.keras.layers.Dropout(0.4),
 
