@@ -15,7 +15,7 @@ def main():
         "npy","all_jet_images.npy"
     ),allow_pickle=True)
 
-    train_model(data,epochs=500,steps=50,mini_batch_size=40)
+    train_model(data,epochs=150,steps=75,mini_batch_size=60)
 
 
 
