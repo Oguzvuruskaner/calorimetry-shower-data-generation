@@ -15,7 +15,7 @@ NOISE_INPUT_SIZE = 100
 
 
 def wasserstein_loss(y_true, y_pred):
-    return tf.keras.backend.mean(-y_true * y_pred)
+    return -y_true * y_pred
 
 
 class ClipConstraint(tf.keras.constraints.Constraint):
@@ -123,12 +123,13 @@ def create_gan(critic:tf.keras.Model,generator:tf.keras.Model) -> (
     tf.keras.Model,
 ):
 
-
-
+    critic_real_input = tf.keras.Input(shape=(DIMENSION*DIMENSION,))
     generator_train_input = tf.keras.Input(shape=(NOISE_INPUT_SIZE,))
     critic_train_input = tf.keras.Input(shape=(NOISE_INPUT_SIZE,))
 
-    critic.compile(OPTIMIZER,wasserstein_loss)
+
+    critic_real = tf.keras.Model(critic_real_input,critic(critic_real_input))
+    critic_real.compile(OPTIMIZER,wasserstein_loss)
 
     generator.trainable = False
     for layer in generator.layers:
@@ -152,7 +153,7 @@ def create_gan(critic:tf.keras.Model,generator:tf.keras.Model) -> (
     critic_gan.summary()
     generator_gan.summary()
 
-    return (critic,critic_gan,generator_gan)
+    return (critic_real,critic_gan,generator_gan)
 
 
 def train_model(data,epochs=200,steps = 500,mini_batch_size=50,save_results = True):
