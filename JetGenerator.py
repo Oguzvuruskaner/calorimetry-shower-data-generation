@@ -32,8 +32,8 @@ class ClipConstraint(tf.keras.constraints.Constraint):
 
 
 KERNEL_INITIALIZER = tf.keras.initializers.RandomNormal(seed=int(time.time()))
-OPTIMIZER = tf.keras.optimizers.Adam(0.00005)
-KERNEL_CONSTRAINT = ClipConstraint(0.02)
+OPTIMIZER = tf.keras.optimizers.Adam(0.001)
+KERNEL_CONSTRAINT = None
 
 
 def create_critic() -> tf.keras.Model:
@@ -156,7 +156,7 @@ def create_gan(critic:tf.keras.Model,generator:tf.keras.Model) -> (
     return (critic,critic_gan,generator_gan)
 
 
-def train_model(data,epochs=200,steps = 500,mini_batch_size=50):
+def train_model(data,epochs=200,steps = 500,mini_batch_size=50,save_results = True):
 
 
     generator = create_generator()
@@ -200,17 +200,23 @@ def train_model(data,epochs=200,steps = 500,mini_batch_size=50):
         epoch_losses[epoch,:3] = np.mean(step_losses.T,axis=1)
         epoch_losses[epoch,3] = critic_real.evaluate(x_test,np.ones((len(x_test),1)),verbose=0)
 
-    tf.keras.utils.plot_model(generator, os.path.join("models", "{}_arch.png".format(generator.name)), show_shapes=True)
-    generator.save(os.path.join("models", "{}.hdf5".format(generator.name)))
+    if save_results:
 
-    tf.keras.utils.plot_model(critic, os.path.join("models", "{}_arch.png".format(critic.name)), show_shapes=True)
-    critic.save(os.path.join("models", "{}.hdf5".format(critic.name)))
+        tf.keras.utils.plot_model(generator, os.path.join("models", "{}_arch.png".format(generator.name)), show_shapes=True)
+        generator.save(os.path.join("models", "{}.hdf5".format(generator.name)))
 
+        tf.keras.utils.plot_model(critic, os.path.join("models", "{}_arch.png".format(critic.name)), show_shapes=True)
+        critic.save(os.path.join("models", "{}.hdf5".format(critic.name)))
 
-    plot_jet_generator_train_results(
-        epoch_losses,
-        os.path.join("models","jet_generator_train_results_{}.png".format(__MODEL_VERSION__))
-    )
+        generate_jet_images(generator)
 
 
-    generate_jet_images(generator)
+        plot_jet_generator_train_results(
+            epoch_losses,
+            os.path.join("models","jet_generator_train_results_{}.png".format(__MODEL_VERSION__))
+        )
+
+
+
+
+    return generator,critic,epoch_losses
