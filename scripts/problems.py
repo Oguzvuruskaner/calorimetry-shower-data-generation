@@ -7,7 +7,7 @@ from scripts.test_model import plot_jet_generator_train_results
 
 
 EPOCHS = 300
-STEPS_PER_EPOCH = 200
+STEPS_PER_EPOCH = 20
 MINI_BATCH = 100
 
 def easy_problem():
@@ -76,7 +76,7 @@ def very_easy_problem():
         )
     ))
 
-
+    return generator,critic,epoch_losses
 
 
 def train_jet_generator():

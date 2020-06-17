@@ -40,8 +40,8 @@ def create_npy_files():
     ]
 
     create_per_jet_file(root_files)
-    create_jet_image_array(root_files)
     create_jet_images(root_files)
+    create_jet_image_array(root_files)
     create_jet_plots(root_files)
 
 

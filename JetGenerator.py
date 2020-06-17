@@ -7,7 +7,6 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 from tqdm import trange
 
-from Model import wasserstein_loss
 from config import DIMENSION,__MODEL_VERSION__
 from scripts.test_model import plot_jet_generator_train_results, generate_jet_images
 
@@ -15,7 +14,7 @@ NOISE_INPUT_SIZE = 100
 
 
 def wasserstein_loss(y_true, y_pred):
-    return -y_true * y_pred
+    return tf.keras.backend.mean(y_true * y_pred)
 
 
 class ClipConstraint(tf.keras.constraints.Constraint):
@@ -32,33 +31,76 @@ class ClipConstraint(tf.keras.constraints.Constraint):
 
 
 KERNEL_INITIALIZER = tf.keras.initializers.RandomNormal(seed = int(time.time()))
-KERNEL_CONSTRAINT = ClipConstraint(clip_value=0.1)
-OPTIMIZER = tf.keras.optimizers.Adam(.0005)
+KERNEL_CONSTRAINT = ClipConstraint(clip_value=.02)
+OPTIMIZER = tf.keras.optimizers.RMSprop(.00005)
+DROPOUT_RATE = .25
+
+_Dense = lambda output_size: tf.keras.layers.Dense(
+    output_size,
+    kernel_constraint=KERNEL_CONSTRAINT,
+    kernel_initializer=KERNEL_INITIALIZER,
+    kernel_regularizer=tf.keras.regularizers.l1(),
+    bias_regularizer=tf.keras.regularizers.l2(),
+)
+
+_Conv2d = lambda filters,kernel_size : tf.keras.layers.Conv2D(
+    filters=filters,
+    kernel_size=kernel_size,
+    kernel_initializer=KERNEL_INITIALIZER,
+    kernel_constraint=KERNEL_CONSTRAINT,
+    kernel_regularizer=tf.keras.regularizers.l1(),
+    bias_regularizer=tf.keras.regularizers.l2(),
+    padding="same"
+)
+
+_LocallyConnected2d = lambda filters,kernel_size: tf.keras.layers.LocallyConnected2D(
+    filters = filters,
+    kernel_size=kernel_size,
+    kernel_initializer=KERNEL_INITIALIZER,
+    kernel_constraint=KERNEL_CONSTRAINT,
+    kernel_regularizer=tf.keras.regularizers.l1(),
+    bias_regularizer=tf.keras.regularizers.l2(),
+)
 
 def create_critic() -> tf.keras.Model:
 
     model = tf.keras.models.Sequential([
         tf.keras.layers.Input(shape=(DIMENSION * DIMENSION,)),
 
-        tf.keras.layers.Dense(1024,kernel_constraint=KERNEL_CONSTRAINT,kernel_initializer=KERNEL_INITIALIZER),
+        _Dense(DIMENSION*DIMENSION),
         tf.keras.layers.LeakyReLU(),
-        tf.keras.layers.Dropout(0.4),
+        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.Dropout(DROPOUT_RATE),
 
-        tf.keras.layers.Dense(1024,kernel_constraint=KERNEL_CONSTRAINT,kernel_initializer=KERNEL_INITIALIZER),
-        tf.keras.layers.LeakyReLU(),
-        tf.keras.layers.Dropout(0.4),
+        tf.keras.layers.Reshape((DIMENSION,DIMENSION,1)),
 
-        tf.keras.layers.Dense(1024,kernel_constraint=KERNEL_CONSTRAINT,kernel_initializer=KERNEL_INITIALIZER),
-        tf.keras.layers.LeakyReLU(),
-        tf.keras.layers.Dropout(0.4),
 
-        tf.keras.layers.Dense(512,kernel_constraint=KERNEL_CONSTRAINT,kernel_initializer=KERNEL_INITIALIZER),
-        tf.keras.layers.LeakyReLU(),
-        tf.keras.layers.Dropout(0.4),
+        tf.keras.layers.ZeroPadding2D((1,1)),
+        _LocallyConnected2d(6,3),
+        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.Dropout(DROPOUT_RATE),
 
-        tf.keras.layers.Dense(256,kernel_constraint=KERNEL_CONSTRAINT,kernel_initializer=KERNEL_INITIALIZER),
+        tf.keras.layers.AvgPool2D(),
+        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.Dropout(DROPOUT_RATE),
+
+        tf.keras.layers.ZeroPadding2D((1, 1)),
+        _LocallyConnected2d(6, 3),
+        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.Dropout(DROPOUT_RATE),
+
+
+        tf.keras.layers.Flatten(),
+
+        _Dense(1024),
         tf.keras.layers.LeakyReLU(),
-        tf.keras.layers.Dropout(0.4),
+        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.Dropout(DROPOUT_RATE),
+
+        _Dense(1024),
+        tf.keras.layers.LeakyReLU(),
+        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.Dropout(DROPOUT_RATE),
 
         tf.keras.layers.Dense(1,activation="tanh",kernel_constraint=KERNEL_CONSTRAINT,kernel_initializer=KERNEL_INITIALIZER)
 
@@ -76,40 +118,45 @@ def create_generator(noise_input_size = NOISE_INPUT_SIZE) -> tf.keras.Model:
     model = tf.keras.Sequential([
         tf.keras.Input(shape=(noise_input_size,)),
 
-        tf.keras.layers.Dense(256,kernel_constraint=KERNEL_CONSTRAINT,kernel_initializer=KERNEL_INITIALIZER),
-        tf.keras.layers.PReLU(),
-        tf.keras.layers.Dropout(0.4),
+        _Dense(256),
+        tf.keras.layers.LeakyReLU(),
+        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.Dropout(DROPOUT_RATE),
+
+        _Dense(512),
+        tf.keras.layers.LeakyReLU(),
+        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.Dropout(DROPOUT_RATE),
 
 
-        tf.keras.layers.Dense(256, kernel_constraint=KERNEL_CONSTRAINT,kernel_initializer=KERNEL_INITIALIZER),
-        tf.keras.layers.PReLU(),
-        tf.keras.layers.Dropout(0.4),
+        _Dense(DIMENSION*DIMENSION),
+        tf.keras.layers.LeakyReLU(),
+        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.Dropout(DROPOUT_RATE),
 
-        tf.keras.layers.Dense(512,kernel_constraint=KERNEL_CONSTRAINT,kernel_initializer=KERNEL_INITIALIZER),
-        tf.keras.layers.PReLU(),
-        tf.keras.layers.Dropout(0.4),
+        tf.keras.layers.Reshape((DIMENSION,DIMENSION,1)),
 
-        tf.keras.layers.Dense(512, kernel_constraint=KERNEL_CONSTRAINT,kernel_initializer=KERNEL_INITIALIZER),
-        tf.keras.layers.PReLU(),
-        tf.keras.layers.Dropout(0.4),
+        tf.keras.layers.ZeroPadding2D((1,1)),
+        _LocallyConnected2d(6,3),
+        tf.keras.layers.LeakyReLU(),
+        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.Dropout(DROPOUT_RATE),
 
-        tf.keras.layers.Dense(1024,kernel_constraint=KERNEL_CONSTRAINT,kernel_initializer=KERNEL_INITIALIZER),
-        tf.keras.layers.PReLU(),
-        tf.keras.layers.Dropout(0.4),
+        tf.keras.layers.ZeroPadding2D((1, 1)),
+        _LocallyConnected2d(12, 3),
+        tf.keras.layers.LeakyReLU(),
+        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.Dropout(DROPOUT_RATE),
 
-        tf.keras.layers.Dense(1024, kernel_constraint=KERNEL_CONSTRAINT, kernel_initializer=KERNEL_INITIALIZER),
-        tf.keras.layers.PReLU(),
-        tf.keras.layers.Dropout(0.4),
+        tf.keras.layers.ZeroPadding2D((1, 1)),
+        _LocallyConnected2d(1, 3),
+        tf.keras.layers.LeakyReLU(),
+        tf.keras.layers.BatchNormalization(),
+        #Batch normalization is going to allow outputs are between 0 and 1.
 
-        tf.keras.layers.Dense(1024, kernel_constraint=KERNEL_CONSTRAINT, kernel_initializer=KERNEL_INITIALIZER),
-        tf.keras.layers.PReLU(),
-        tf.keras.layers.Dropout(0.4),
+        tf.keras.layers.Flatten(),
+        tf.keras.layers.Lambda(tf.keras.backend.sigmoid)
 
-        tf.keras.layers.Dense(1024, kernel_constraint=KERNEL_CONSTRAINT,kernel_initializer=KERNEL_INITIALIZER),
-        tf.keras.layers.PReLU(),
-        tf.keras.layers.Dropout(0.4),
-
-        tf.keras.layers.Dense(DIMENSION*DIMENSION,activation="sigmoid",kernel_constraint=KERNEL_CONSTRAINT,kernel_initializer=KERNEL_INITIALIZER),
 
     ],name="v{}_jet_generator".format(__MODEL_VERSION__))
 
@@ -215,6 +262,6 @@ def train_model(data,epochs=200,steps = 500,mini_batch_size=50,save_results = Tr
         )
 
 
-
-
     return generator,critic,epoch_losses
+
+
