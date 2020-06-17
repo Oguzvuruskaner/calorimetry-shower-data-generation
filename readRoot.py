@@ -14,7 +14,7 @@ MAX_COLLISION_IN_EXPERIMENT = 200000
 
 
 
-def create_all_hits_file(pathList:[str]):
+def create_all_hits_file(root_files:[str]):
     """
 
     :param pathList: List of root file paths.
@@ -22,7 +22,7 @@ def create_all_hits_file(pathList:[str]):
     """
     total_element = 0
 
-    for rootFile in pathList:
+    for rootFile in root_files:
 
         with uproot.open(rootFile) as root:
             hit_x = np.array(root[__ROOT_DIRECTORY__][b"hit_x"].array())
@@ -35,7 +35,7 @@ def create_all_hits_file(pathList:[str]):
 
     current_element = 0
 
-    for rootFile in pathList:
+    for rootFile in root_files:
 
         with uproot.open(rootFile) as root:
 
@@ -137,7 +137,7 @@ def create_jet_images(root_files: [str]):
                 image[int(z),int(r)] += e
 
 
-            save_jet_image(image,os.path.join("jet_images","images", "{}.png".format(counter)))
+            save_jet_image(image,os.path.join("jet_images","images_{}.png".format(counter)))
 
             counter += 1
 
