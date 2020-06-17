@@ -4,7 +4,8 @@ import os
 import numpy as np
 from sklearn.preprocessing import StandardScaler
 from tqdm import tqdm
-from readRoot import create_all_hits_file
+from readRoot import create_per_jet_file, create_jet_image_array, create_jet_images, \
+    create_jet_plots
 from config import __DATASETS_WITH_OUTLIERS__, HIT_R_MAX, HIT_R_MIN, HIT_Z_MAX, HIT_Z_MIN
 from scripts.test_model import show_stats
 
@@ -38,7 +39,10 @@ def create_npy_files():
         if root_file.endswith(".root")
     ]
 
-    create_all_hits_file(root_files)
+    create_per_jet_file(root_files)
+    create_jet_image_array(root_files)
+    create_jet_images(root_files)
+    create_jet_plots(root_files)
 
 
 def filter_outliers(outlier_threshold=4):

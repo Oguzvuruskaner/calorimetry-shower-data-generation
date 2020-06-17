@@ -6,6 +6,10 @@ from JetGenerator import train_model
 from scripts.test_model import plot_jet_generator_train_results
 
 
+EPOCHS = 300
+STEPS_PER_EPOCH = 200
+MINI_BATCH = 100
+
 def easy_problem():
 
     # Create images with dim=DIMENSION
@@ -27,7 +31,7 @@ def easy_problem():
 
     data.resize((TOTAL_IMAGES,DIMENSION,DIMENSION))
 
-    generator,critic,epoch_losses = train_model(data,epochs=100,steps=20,mini_batch_size=60,save_results=False)
+    generator,critic,epoch_losses = train_model(data,epochs=EPOCHS,steps=STEPS_PER_EPOCH,mini_batch_size=MINI_BATCH,save_results=False)
 
     predictions = generator.predict(np.random.normal(size=(200,100)))
     sums = predictions.sum(axis=1)
@@ -53,7 +57,7 @@ def very_easy_problem():
 
     data = np.zeros((TOTAL_IMAGES, DIMENSION, DIMENSION))
 
-    generator, critic, epoch_losses = train_model(data, epochs=100, steps=20, mini_batch_size=60, save_results=False)
+    generator, critic, epoch_losses = train_model(data,epochs=EPOCHS,steps=STEPS_PER_EPOCH,mini_batch_size=MINI_BATCH, save_results=False)
 
     predictions = generator.predict(np.random.normal(size=(200, 100)))
     sums = predictions.sum(axis=1)
@@ -63,10 +67,16 @@ def very_easy_problem():
 
     plot_jet_generator_train_results(
         epoch_losses,
-        os.path.join("easy_problem.png")
+        os.path.join("very_easy_problem.png")
     )
 
-    print("Critic Result: {}".format(critic.predict(np.zeros(1,DIMENSION,DIMENSION))))
+    print("Critic Result: {}".format(
+        critic.predict(
+            np.zeros((1,DIMENSION*DIMENSION))
+        )
+    ))
+
+
 
 
 def train_jet_generator():
@@ -75,4 +85,4 @@ def train_jet_generator():
         "npy","all_jet_images.npy"
     ),allow_pickle=True)
 
-    train_model(data,epochs=150,steps=75,mini_batch_size=60)
+    train_model(data,epochs=EPOCHS,steps=STEPS_PER_EPOCH,mini_batch_size=MINI_BATCH)
