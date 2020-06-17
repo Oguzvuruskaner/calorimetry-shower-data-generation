@@ -12,7 +12,7 @@ if __name__ == "__main__":
     )
 
     critic.save(
-        os.path.join("models", "very_easy_problem_generator.h5")
+        os.path.join("models", "very_easy_problem_critic.h5")
     )
 
 
