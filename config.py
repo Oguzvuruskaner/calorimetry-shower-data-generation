@@ -8,7 +8,7 @@ __DATA_MAPPING__ = [
     "hit_e"
 ]
 
-__MODEL_VERSION__ = 8
+__MODEL_VERSION__ = 9
 
 HIT_Z_MAX = 1001
 HIT_Z_MIN = -1000
@@ -19,3 +19,8 @@ HIT_R_MAX = 1532
 DIMENSION = 32
 
 ENERGY = 50 #GeV
+
+# N_COMPONENTS should be a square number
+# to use 2d convolutions and locally connected layers
+# in neural network.
+N_COMPONENTS = 4
