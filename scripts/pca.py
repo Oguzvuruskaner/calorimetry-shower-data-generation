@@ -57,17 +57,6 @@ def create_pca_compression():
 
     updated_data = pca.fit_transform(data)
 
-    np.save(
-        os.path.join("npy","{}_component_jet_images".format(N_COMPONENTS)),
-        updated_data
-    )
-
-    with open(
-        os.path.join("npy","{}_component_pca".format(N_COMPONENTS)),
-        "wb"
-    ) as fp:
-
-        pickle.dump(pca,fp)
-
+    return pca,updated_data
 
 
