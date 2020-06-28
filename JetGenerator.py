@@ -1,20 +1,21 @@
 import time
 import os
+from math import sqrt
 
 import tensorflow as tf
 import numpy as np
 
 from sklearn.model_selection import train_test_split
+from sklearn.decomposition import PCA
 from tqdm import trange
 
-from config import DIMENSION,__MODEL_VERSION__
+from config import DIMENSION,__MODEL_VERSION__,N_COMPONENTS
 from scripts.test_model import plot_jet_generator_train_results, generate_jet_images
 
-NOISE_INPUT_SIZE = 100
 
 
 def wasserstein_loss(y_true, y_pred):
-    return tf.keras.backend.mean(y_true * y_pred)
+    return tf.keras.backend.mean(-y_true * y_pred)
 
 
 class ClipConstraint(tf.keras.constraints.Constraint):
@@ -30,65 +31,76 @@ class ClipConstraint(tf.keras.constraints.Constraint):
 
 
 
-KERNEL_INITIALIZER = tf.keras.initializers.RandomNormal(seed = int(time.time()))
+KERNEL_INITIALIZER = tf.keras.initializers.glorot_uniform(seed=int(time.time()))
 KERNEL_CONSTRAINT = ClipConstraint(clip_value=.02)
-OPTIMIZER = tf.keras.optimizers.RMSprop(.00005)
+OPTIMIZER = tf.keras.optimizers.RMSprop()
 DROPOUT_RATE = .25
+LOSS = wasserstein_loss
+LATENT_SIZE = 100
 
-_Dense = lambda output_size: tf.keras.layers.Dense(
+_Dense = lambda output_size,activation=None: tf.keras.layers.Dense(
     output_size,
     kernel_constraint=KERNEL_CONSTRAINT,
     kernel_initializer=KERNEL_INITIALIZER,
     kernel_regularizer=tf.keras.regularizers.l1(),
     bias_regularizer=tf.keras.regularizers.l2(),
+    activation=activation
 )
 
-_Conv2d = lambda filters,kernel_size : tf.keras.layers.Conv2D(
+_Conv2d = lambda filters,kernel_size,activation=None : tf.keras.layers.Conv2D(
     filters=filters,
     kernel_size=kernel_size,
     kernel_initializer=KERNEL_INITIALIZER,
     kernel_constraint=KERNEL_CONSTRAINT,
     kernel_regularizer=tf.keras.regularizers.l1(),
     bias_regularizer=tf.keras.regularizers.l2(),
-    padding="same"
+    padding="same",
+    activation=activation
 )
 
-_LocallyConnected2d = lambda filters,kernel_size: tf.keras.layers.LocallyConnected2D(
+_LocallyConnected2d = lambda filters,kernel_size,activation=None: tf.keras.layers.LocallyConnected2D(
     filters = filters,
     kernel_size=kernel_size,
     kernel_initializer=KERNEL_INITIALIZER,
     kernel_constraint=KERNEL_CONSTRAINT,
     kernel_regularizer=tf.keras.regularizers.l1(),
     bias_regularizer=tf.keras.regularizers.l2(),
+    activation=activation
 )
+
+
+
+def get_latent_input(batch_size=64):
+    return np.random.normal(size=(batch_size, LATENT_SIZE))
+
 
 def create_critic() -> tf.keras.Model:
 
-    model = tf.keras.models.Sequential([
-        tf.keras.layers.Input(shape=(DIMENSION * DIMENSION,)),
+    _dimension = int(sqrt(N_COMPONENTS))
 
-        _Dense(DIMENSION*DIMENSION),
+    model = tf.keras.models.Sequential([
+        tf.keras.layers.Input(shape=(N_COMPONENTS)),
+
+
+        _Dense(N_COMPONENTS),
         tf.keras.layers.LeakyReLU(),
         tf.keras.layers.BatchNormalization(),
         tf.keras.layers.Dropout(DROPOUT_RATE),
 
-        tf.keras.layers.Reshape((DIMENSION,DIMENSION,1)),
+        tf.keras.layers.Reshape((_dimension,_dimension,1)),
 
 
         tf.keras.layers.ZeroPadding2D((1,1)),
         _LocallyConnected2d(6,3),
-        tf.keras.layers.BatchNormalization(),
-        tf.keras.layers.Dropout(DROPOUT_RATE),
-
-        tf.keras.layers.AvgPool2D(),
+        tf.keras.layers.LeakyReLU(),
         tf.keras.layers.BatchNormalization(),
         tf.keras.layers.Dropout(DROPOUT_RATE),
 
         tf.keras.layers.ZeroPadding2D((1, 1)),
-        _LocallyConnected2d(6, 3),
+        _LocallyConnected2d(1, 3),
+        tf.keras.layers.LeakyReLU(),
         tf.keras.layers.BatchNormalization(),
         tf.keras.layers.Dropout(DROPOUT_RATE),
-
 
         tf.keras.layers.Flatten(),
 
@@ -102,7 +114,7 @@ def create_critic() -> tf.keras.Model:
         tf.keras.layers.BatchNormalization(),
         tf.keras.layers.Dropout(DROPOUT_RATE),
 
-        tf.keras.layers.Dense(1,activation="tanh",kernel_constraint=KERNEL_CONSTRAINT,kernel_initializer=KERNEL_INITIALIZER)
+        _Dense(1,activation="tanh")
 
     ],name="v{}_jet_critic".format(__MODEL_VERSION__))
 
@@ -112,51 +124,44 @@ def create_critic() -> tf.keras.Model:
     return model
 
 
-def create_generator(noise_input_size = NOISE_INPUT_SIZE) -> tf.keras.Model:
+def create_generator() -> tf.keras.Model:
 
+    _dimension = int(sqrt(N_COMPONENTS))
 
     model = tf.keras.Sequential([
-        tf.keras.Input(shape=(noise_input_size,)),
+        tf.keras.layers.Input(LATENT_SIZE),
 
-        _Dense(256),
+        tf.keras.layers.Dense(1024),
         tf.keras.layers.LeakyReLU(),
         tf.keras.layers.BatchNormalization(),
         tf.keras.layers.Dropout(DROPOUT_RATE),
 
-        _Dense(512),
+        tf.keras.layers.Dense(N_COMPONENTS),
         tf.keras.layers.LeakyReLU(),
         tf.keras.layers.BatchNormalization(),
         tf.keras.layers.Dropout(DROPOUT_RATE),
 
+        tf.keras.layers.Reshape((_dimension, _dimension, 1)),
 
-        _Dense(DIMENSION*DIMENSION),
-        tf.keras.layers.LeakyReLU(),
-        tf.keras.layers.BatchNormalization(),
-        tf.keras.layers.Dropout(DROPOUT_RATE),
-
-        tf.keras.layers.Reshape((DIMENSION,DIMENSION,1)),
-
-        tf.keras.layers.ZeroPadding2D((1,1)),
-        _LocallyConnected2d(6,3),
+        tf.keras.layers.ZeroPadding2D((1, 1)),
+        tf.keras.layers.LocallyConnected2D(7, (3, 3)),
         tf.keras.layers.LeakyReLU(),
         tf.keras.layers.BatchNormalization(),
         tf.keras.layers.Dropout(DROPOUT_RATE),
 
         tf.keras.layers.ZeroPadding2D((1, 1)),
-        _LocallyConnected2d(12, 3),
+        tf.keras.layers.LocallyConnected2D(5, (3, 3)),
         tf.keras.layers.LeakyReLU(),
         tf.keras.layers.BatchNormalization(),
         tf.keras.layers.Dropout(DROPOUT_RATE),
 
         tf.keras.layers.ZeroPadding2D((1, 1)),
-        _LocallyConnected2d(1, 3),
+        tf.keras.layers.LocallyConnected2D(1, (3, 3)),
         tf.keras.layers.LeakyReLU(),
         tf.keras.layers.BatchNormalization(),
-        #Batch normalization is going to allow outputs are between 0 and 1.
+        tf.keras.layers.Dropout(DROPOUT_RATE),
 
         tf.keras.layers.Flatten(),
-        tf.keras.layers.Lambda(tf.keras.backend.sigmoid)
-
 
     ],name="v{}_jet_generator".format(__MODEL_VERSION__))
 
@@ -164,53 +169,43 @@ def create_generator(noise_input_size = NOISE_INPUT_SIZE) -> tf.keras.Model:
 
     return model
 
-def create_gan(critic:tf.keras.Model,generator:tf.keras.Model) -> (
-    tf.keras.Model,
-    tf.keras.Model,
-    tf.keras.Model,
-):
 
-    critic_real_input = tf.keras.Input(shape=(DIMENSION*DIMENSION,))
-    generator_train_input = tf.keras.Input(shape=(NOISE_INPUT_SIZE,))
-    critic_train_input = tf.keras.Input(shape=(NOISE_INPUT_SIZE,))
+def train_model(
+        data,
+        epochs=200,
+        steps = 500,
+        batch_size=64,
+        save_results = True,
+        generator_model=None,
+        critic_model=None
+        ):
 
+    pca = PCA(N_COMPONENTS)
 
-    critic_real = tf.keras.Model(critic_real_input,critic(critic_real_input))
-    critic_real.compile(OPTIMIZER,wasserstein_loss)
+    if generator_model:
+        generator = generator_model
+    else:
+        generator = create_generator()
 
-    generator.trainable = False
-    for layer in generator.layers:
-        layer.trainable = False
-
-    critic_gan = tf.keras.Model(critic_train_input,critic(generator(critic_train_input)))
-    critic_gan.compile(OPTIMIZER,wasserstein_loss)
-
-    generator.trainable = True
-    for layer in generator.layers:
-        layer.trainable = True
-
-    critic.trainable = False
-    for layer in critic.layers:
-        layer.trainable = False
-
-    generator_gan = tf.keras.Model(generator_train_input,critic(generator(generator_train_input)))
-    generator_gan.compile(OPTIMIZER,wasserstein_loss)
+    if critic_model:
+        critic = critic_model
+    else:
+        critic = create_critic()
 
 
-    critic_gan.summary()
-    generator_gan.summary()
+    critic_fake_input = tf.keras.Input(LATENT_SIZE)
+    critic_fake_gan = tf.keras.Model(critic_fake_input, critic(generator(critic_fake_input)))
+    critic_fake_gan.compile(loss=wasserstein_loss)
 
-    return (critic_real,critic_gan,generator_gan)
+    generator_train_input = tf.keras.Input(LATENT_SIZE)
+    generator_gan = tf.keras.Model(generator_train_input, critic(generator(generator_train_input)))
+    generator_gan.compile(loss=wasserstein_loss)
 
-
-def train_model(data,epochs=200,steps = 500,mini_batch_size=50,save_results = True):
-
-
-    generator = create_generator()
-    critic = create_critic()
-    critic_real,critic_gan,generator_gan = create_gan(critic,generator)
+    critic.compile(loss=wasserstein_loss)
 
     data = data.reshape((len(data),DIMENSION*DIMENSION))
+
+    data = pca.fit_transform(data)
 
     epoch_losses = np.zeros((epochs,4))
     step_losses = np.zeros((steps,3))
@@ -227,23 +222,28 @@ def train_model(data,epochs=200,steps = 500,mini_batch_size=50,save_results = Tr
 
         for step in range(steps):
 
+            critic.trainable = True
+            generator.trainable = False
 
-            critic_fake_input = np.random.normal(size=(mini_batch_size,NOISE_INPUT_SIZE))
-            generator_predict_input = np.random.normal(size=(mini_batch_size//5,NOISE_INPUT_SIZE))
-
-            step_losses[step, 0] = critic_real.train_on_batch(
-                x_train[np.random.choice(len(x_train), mini_batch_size)],
-                # This is equivalent to np.random.randint(0,len(x_train),3)
-                np.ones((mini_batch_size, 1))
-            )
+            for i in range(5):
 
 
-            step_losses[step,1] = critic_gan.train_on_batch(critic_fake_input,-np.ones((mini_batch_size,1)))
-            step_losses[step,2] = generator_gan.train_on_batch(generator_predict_input,np.ones((mini_batch_size//5,1)))
+                step_losses[step, 0] = critic.train_on_batch(
+                    x_train[np.random.choice(len(x_train), batch_size)],
+                    # This is equivalent to np.random.randint(0,len(x_train),batch_size)
+                    np.ones((batch_size, 1))
+                )
+
+                step_losses[step,1] = critic_fake_gan.train_on_batch(np.random.normal(size=(batch_size,LATENT_SIZE)),-np.ones((batch_size,1)))
+
+            critic.trainable = False
+            generator.trainable = True
+
+            step_losses[step,2] = generator_gan.train_on_batch(np.random.normal(size=(batch_size,LATENT_SIZE)),np.ones((batch_size,1)))
 
 
         epoch_losses[epoch,:3] = np.mean(step_losses.T,axis=1)
-        epoch_losses[epoch,3] = critic_real.evaluate(x_test,np.ones((len(x_test),1)),verbose=0)
+        epoch_losses[epoch,3] = critic.evaluate(x_test,np.ones((len(x_test),1)),verbose=0)
 
     if save_results:
 
@@ -253,7 +253,7 @@ def train_model(data,epochs=200,steps = 500,mini_batch_size=50,save_results = Tr
         tf.keras.utils.plot_model(critic, os.path.join("models", "{}_arch.png".format(critic.name)), show_shapes=True)
         critic.save(os.path.join("models", "{}.hdf5".format(critic.name)))
 
-        generate_jet_images(generator)
+        generate_jet_images(generator,pca=pca)
 
 
         plot_jet_generator_train_results(
