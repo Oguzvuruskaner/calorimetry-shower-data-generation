@@ -7,8 +7,8 @@ from scripts.test_model import plot_jet_generator_train_results
 
 
 EPOCHS = 300
-STEPS_PER_EPOCH = 20
-MINI_BATCH = 100
+STEPS_PER_EPOCH = 100
+
 
 def easy_problem():
 
@@ -31,7 +31,7 @@ def easy_problem():
 
     data.resize((TOTAL_IMAGES,DIMENSION,DIMENSION))
 
-    generator,critic,epoch_losses = train_model(data,epochs=EPOCHS,steps=STEPS_PER_EPOCH,mini_batch_size=MINI_BATCH,save_results=False)
+    generator,critic,epoch_losses = train_model(data,epochs=EPOCHS,steps=STEPS_PER_EPOCH,save_results=False)
 
     predictions = generator.predict(np.random.normal(size=(200,100)))
     sums = predictions.sum(axis=1)
@@ -57,7 +57,7 @@ def very_easy_problem():
 
     data = np.zeros((TOTAL_IMAGES, DIMENSION, DIMENSION))
 
-    generator, critic, epoch_losses = train_model(data,epochs=EPOCHS,steps=STEPS_PER_EPOCH,mini_batch_size=MINI_BATCH, save_results=False)
+    generator, critic, epoch_losses = train_model(data,epochs=EPOCHS,steps=STEPS_PER_EPOCH, save_results=False)
 
     predictions = generator.predict(np.random.normal(size=(200, 100)))
     sums = predictions.sum(axis=1)
@@ -85,4 +85,4 @@ def train_jet_generator():
         "npy","all_jet_images.npy"
     ),allow_pickle=True)
 
-    train_model(data,epochs=EPOCHS,steps=STEPS_PER_EPOCH,mini_batch_size=MINI_BATCH)
+    return train_model(data,epochs=EPOCHS,steps=STEPS_PER_EPOCH)

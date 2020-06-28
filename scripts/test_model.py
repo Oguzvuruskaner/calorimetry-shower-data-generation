@@ -11,6 +11,8 @@ from tqdm import tqdm, trange
 from config import __MODEL_VERSION__, DIMENSION
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
+from sklearn.decomposition import PCA
+
 
 PARTICLES_MEAN = 139356
 PARTICLES_STD = 25077
@@ -98,7 +100,8 @@ def plot_jet_generator_train_results(epoch_results:np.array,save_path:str):
 def generate_jet_images(
         generator : Model,
         count=200,
-        root_dir=os.path.join("results","jet_images_{}".format(__MODEL_VERSION__))
+        root_dir=os.path.join("results","jet_images_{}".format(__MODEL_VERSION__)),
+        pca : PCA = None
 ):
 
     if not os.path.exists(root_dir):
@@ -108,6 +111,9 @@ def generate_jet_images(
     noise_input_size = generator.inputs[0].shape.dims[1]
 
     results = generator.predict(np.random.normal(size=(count,noise_input_size)))
+
+    if pca:
+        results = pca.inverse_transform(results)
 
     for ind,result in tqdm(enumerate(results,start=1)):
         image = result.reshape((DIMENSION,DIMENSION)) * 50
@@ -123,7 +129,7 @@ def save_jet_image(
 
     for i in range(len(image)):
         for j in range(len(image[i])):
-            image[i][j] = 0 if image[i][j] == 0 else (math.log10(image[i][j]) + 8) * 25
+            image[i][j] = 0 if image[i][j] <= 0 else (max(0,math.log10(image[i][j]) + 8)) * 25
 
 
 
