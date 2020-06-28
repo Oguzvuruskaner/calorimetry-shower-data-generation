@@ -1,11 +1,39 @@
 import os
 
+import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
-import pickle
 
 from sklearn.decomposition import PCA
 from config import N_COMPONENTS
+
+
+class PCALayer(tf.keras.layers.Layer):
+
+    def __init__(self,pca:PCA=None):
+        super(PCALayer,self).__init__()
+        self._pca = pca
+
+
+
+class PCAEncoder(PCALayer):
+
+    def call(self, inputs, **kwargs):
+        if not self._pca:
+            return inputs
+
+        return self._pca.transform(inputs)
+
+
+
+class PCADecoder(PCALayer):
+
+    def call(self, inputs, **kwargs):
+        if not self._pca:
+            return inputs
+
+        return self._pca.inverse_transform(inputs)
+
 
 
 
