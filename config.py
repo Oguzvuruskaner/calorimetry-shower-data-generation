@@ -23,4 +23,4 @@ ENERGY = 50 #GeV
 # N_COMPONENTS should be a square number
 # to use 2d convolutions and locally connected layers
 # in neural network.
-N_COMPONENTS = 100
+N_COMPONENTS = 25
