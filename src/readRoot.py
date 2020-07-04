@@ -2,13 +2,11 @@ import uproot
 import numpy as np
 from tqdm import tqdm
 import os
-from config import HIT_R_MAX,HIT_R_MIN,HIT_Z_MAX,HIT_Z_MIN,DIMENSION
-from PIL import Image
-import math
+from src.config import HIT_R_MAX,HIT_R_MIN,HIT_Z_MAX,HIT_Z_MIN,DIMENSION
 
 __ROOT_DIRECTORY__ =  b"showers"
 
-from scripts.test_model import plot_data, save_jet_image
+from src.scripts.test_model import plot_data, save_jet_image
 
 MAX_COLLISION_IN_EXPERIMENT = 200000
 
@@ -53,7 +51,7 @@ def create_all_hits_file(root_files:[str]):
                 all_hits[current_element:current_element+len(hit_x[ind]),2] = hit_e[ind]
                 current_element += len(hit_x[ind])
 
-    np.save(os.path.join("npy","triple_all.npy"), all_hits,allow_pickle=True)
+    np.save(os.path.join("../npy", "triple_all.npy"), all_hits, allow_pickle=True)
     print("Saving all hits file finished.")
 
 def create_per_jet_file(root_files:[str]):
@@ -78,7 +76,7 @@ def create_per_jet_file(root_files:[str]):
 
             jet_list.append(tmp_jet)
 
-    np.save(os.path.join("npy","per_jet_all.npy"),np.array(jet_list))
+    np.save(os.path.join("../npy", "per_jet_all.npy"), np.array(jet_list))
 
 
 def create_jet_plots(root_files:[str]):
@@ -101,7 +99,7 @@ def create_jet_plots(root_files:[str]):
             tmp_jet[:,1] = hit_z[i]
             tmp_jet[:,2] = hit_e[i]
 
-            plot_data(tmp_jet,"Jet {}".format(counter), os.path.join("jet_images","plots" ,"{}.png".format(counter)),jet_bins=100, jet=True,dpi=500)
+            plot_data(tmp_jet,"Jet {}".format(counter), os.path.join("../jet_images", "plots", "{}.png".format(counter)), jet_bins=100, jet=True, dpi=500)
             counter += 1
 
 
@@ -137,7 +135,7 @@ def create_jet_images(root_files: [str]):
                 image[int(z),int(r)] += e
 
 
-            save_jet_image(image,os.path.join("jet_images","images_{}.png".format(counter)))
+            save_jet_image(image, os.path.join("../jet_images", "images_{}.png".format(counter)))
 
             counter += 1
 
@@ -189,6 +187,6 @@ def create_jet_image_array(root_files : [str]):
 
 
     np.save(
-        os.path.join("npy","all_jet_images.npy"),
+        os.path.join("../npy", "all_jet_images.npy"),
         all_jets,
         allow_pickle=True)

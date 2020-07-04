@@ -9,8 +9,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.decomposition import PCA
 from tqdm import trange
 
-from config import DIMENSION,__MODEL_VERSION__,N_COMPONENTS
-from scripts.test_model import plot_jet_generator_train_results, generate_jet_images
+from src.config import DIMENSION,__MODEL_VERSION__,N_COMPONENTS
+from src.scripts.test_model import plot_jet_generator_train_results, generate_jet_images
 
 
 
@@ -96,6 +96,18 @@ def create_critic() -> tf.keras.Model:
         tf.keras.layers.BatchNormalization(),
         tf.keras.layers.Dropout(DROPOUT_RATE),
 
+        tf.keras.layers.ZeroPadding2D((2, 2)),
+        _LocallyConnected2d(9, 5),
+        tf.keras.layers.LeakyReLU(),
+        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.Dropout(DROPOUT_RATE),
+
+        tf.keras.layers.ZeroPadding2D((1, 1)),
+        _LocallyConnected2d(3, 3),
+        tf.keras.layers.LeakyReLU(),
+        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.Dropout(DROPOUT_RATE),
+
         tf.keras.layers.ZeroPadding2D((1, 1)),
         _LocallyConnected2d(1, 3),
         tf.keras.layers.LeakyReLU(),
@@ -136,6 +148,16 @@ def create_generator() -> tf.keras.Model:
         tf.keras.layers.BatchNormalization(),
         tf.keras.layers.Dropout(DROPOUT_RATE),
 
+        tf.keras.layers.Dense(1024),
+        tf.keras.layers.LeakyReLU(),
+        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.Dropout(DROPOUT_RATE),
+
+        tf.keras.layers.Dense(1024),
+        tf.keras.layers.LeakyReLU(),
+        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.Dropout(DROPOUT_RATE),
+
         tf.keras.layers.Dense(N_COMPONENTS),
         tf.keras.layers.LeakyReLU(),
         tf.keras.layers.BatchNormalization(),
@@ -151,6 +173,18 @@ def create_generator() -> tf.keras.Model:
 
         tf.keras.layers.ZeroPadding2D((1, 1)),
         tf.keras.layers.LocallyConnected2D(5, (3, 3)),
+        tf.keras.layers.LeakyReLU(),
+        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.Dropout(DROPOUT_RATE),
+
+        tf.keras.layers.ZeroPadding2D((2, 2)),
+        _LocallyConnected2d(9, 5),
+        tf.keras.layers.LeakyReLU(),
+        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.Dropout(DROPOUT_RATE),
+
+        tf.keras.layers.ZeroPadding2D((1, 1)),
+        _LocallyConnected2d(3, 3),
         tf.keras.layers.LeakyReLU(),
         tf.keras.layers.BatchNormalization(),
         tf.keras.layers.Dropout(DROPOUT_RATE),
@@ -195,13 +229,13 @@ def train_model(
 
     critic_fake_input = tf.keras.Input(LATENT_SIZE)
     critic_fake_gan = tf.keras.Model(critic_fake_input, critic(generator(critic_fake_input)))
-    critic_fake_gan.compile(loss=wasserstein_loss)
+    critic_fake_gan.compile(OPTIMIZER,wasserstein_loss)
 
     generator_train_input = tf.keras.Input(LATENT_SIZE)
     generator_gan = tf.keras.Model(generator_train_input, critic(generator(generator_train_input)))
-    generator_gan.compile(loss=wasserstein_loss)
+    generator_gan.compile(OPTIMIZER,wasserstein_loss)
 
-    critic.compile(loss=wasserstein_loss)
+    critic.compile(OPTIMIZER,wasserstein_loss)
 
     data = data.reshape((len(data),DIMENSION*DIMENSION))
 
@@ -247,21 +281,27 @@ def train_model(
 
     if save_results:
 
-        tf.keras.utils.plot_model(generator, os.path.join("models", "{}_arch.png".format(generator.name)), show_shapes=True)
-        generator.save(os.path.join("models", "{}.hdf5".format(generator.name)))
+        tf.keras.utils.plot_model(generator, os.path.join("../models", "{}_arch.png".format(generator.name)), show_shapes=True)
+        generator.save(os.path.join("../models", "{}.hdf5".format(generator.name)))
 
-        tf.keras.utils.plot_model(critic, os.path.join("models", "{}_arch.png".format(critic.name)), show_shapes=True)
-        critic.save(os.path.join("models", "{}.hdf5".format(critic.name)))
+        tf.keras.utils.plot_model(critic, os.path.join("../models", "{}_arch.png".format(critic.name)), show_shapes=True)
+        critic.save(os.path.join("../models", "{}.hdf5".format(critic.name)))
 
         generate_jet_images(generator,pca=pca)
 
 
         plot_jet_generator_train_results(
             epoch_losses,
-            os.path.join("models","jet_generator_train_results_{}.png".format(__MODEL_VERSION__))
+            os.path.join("../models", "jet_generator_train_results_{}.png".format(__MODEL_VERSION__))
         )
 
 
     return generator,critic,epoch_losses
 
 
+def load_models():
+
+    critic = tf.keras.models.load_model()
+    generator =  tf.keras.models.load_model()
+
+    return generator,critic

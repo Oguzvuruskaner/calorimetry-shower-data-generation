@@ -2,12 +2,19 @@ import os
 
 import numpy as np
 
-from JetGenerator import train_model
-from scripts.test_model import plot_jet_generator_train_results
+from src.JetGenerator import train_model
+from src.scripts.test_model import plot_jet_generator_train_results
+from src.config import __MODEL_VERSION__
+
 
 
 EPOCHS = 300
 STEPS_PER_EPOCH = 100
+
+def continue_training(model_version=__MODEL_VERSION__):
+    ...
+
+
 
 
 def easy_problem():
@@ -16,7 +23,7 @@ def easy_problem():
     # Each image has random real numbers inside it summing up to 1.
 
 
-    from config import DIMENSION
+    from src.config import DIMENSION
 
     TOTAL_IMAGES = 10000
 
@@ -51,7 +58,7 @@ def very_easy_problem():
     # Create images with dim=DIMENSION
     # Each image has zeros.
 
-    from config import DIMENSION
+    from src.config import DIMENSION
 
     TOTAL_IMAGES = 10000
 

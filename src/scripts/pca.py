@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from sklearn.decomposition import PCA
-from config import N_COMPONENTS
+from src.config import N_COMPONENTS,ROOT_FOLDER,DIMENSION
 
 
 class PCALayer(tf.keras.layers.Layer):
@@ -33,6 +33,31 @@ class PCADecoder(PCALayer):
             return inputs
 
         return self._pca.inverse_transform(inputs)
+
+
+
+def write_pca_to_csv(
+        dir_path= os.path.join(ROOT_FOLDER,"results")
+):
+
+    data = np.load(
+        os.path.join("npy", "all_jet_images.npy")
+    )
+
+    data.resize((data.shape[0], data.shape[1] * data.shape[2]))
+
+    # n_components <= min(num_samples,num_features)
+    total_indices = min(data.shape[0], data.shape[1])
+
+    pca = PCA(total_indices)
+
+    with open(os.path.join(dir_path,"pca_dimension_{}.csv".format(DIMENSION)),"w") as fp:
+
+        fp.write("n_dimension,explained_variance\n")
+
+        for ind,explained_variance in enumerate(pca,start=1):
+
+            fp.write("{},{}\n".format(ind,explained_variance))
 
 
 

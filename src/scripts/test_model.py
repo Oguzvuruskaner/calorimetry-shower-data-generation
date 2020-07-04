@@ -8,7 +8,7 @@ from PIL import Image
 
 from keras.models import  Model
 from tqdm import tqdm, trange
-from config import __MODEL_VERSION__, DIMENSION
+from src.config import __MODEL_VERSION__, DIMENSION
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 from sklearn.decomposition import PCA

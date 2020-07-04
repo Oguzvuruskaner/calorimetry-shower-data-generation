@@ -1,3 +1,5 @@
+import os
+
 __DATASETS_WITH_OUTLIERS__ = ["triple_all"]
 
 __DATASETS__ = ["triple_all"]
@@ -24,3 +26,5 @@ ENERGY = 50 #GeV
 # to use 2d convolutions and locally connected layers
 # in neural network.
 N_COMPONENTS = 25
+
+ROOT_FOLDER = os.path.join("..")

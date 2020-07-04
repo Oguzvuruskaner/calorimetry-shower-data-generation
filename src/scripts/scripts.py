@@ -4,12 +4,12 @@ import os
 import numpy as np
 from sklearn.preprocessing import StandardScaler
 from tqdm import tqdm
-from readRoot import create_per_jet_file, create_jet_image_array, create_jet_images, \
+from src.readRoot import create_per_jet_file, create_jet_image_array, create_jet_images, \
     create_jet_plots
-from config import __DATASETS_WITH_OUTLIERS__, HIT_R_MAX, HIT_R_MIN, HIT_Z_MAX, HIT_Z_MIN
-from scripts.test_model import show_stats
+from src.config import __DATASETS_WITH_OUTLIERS__, HIT_R_MAX, HIT_R_MIN, HIT_Z_MAX, HIT_Z_MIN
+from src.scripts.test_model import show_stats
 
-from config import DIMENSION
+from src.config import DIMENSION
 
 
 # scripts file include project specific
@@ -57,13 +57,13 @@ def filter_outliers(outlier_threshold=4):
     """
 
     for dataset_name in tqdm(__DATASETS_WITH_OUTLIERS__):
-        data = np.load(os.path.join("../npy", "{}.npy".format(dataset_name)), allow_pickle=True)
+        data = np.load(os.path.join("../../npy", "{}.npy".format(dataset_name)), allow_pickle=True)
         ss = StandardScaler()
         ss.fit(data)
         filter_array = (ss.transform(data) <= outlier_threshold) | (ss.transform(data) >= -outlier_threshold)
         data = data[filter_array]
         data.resize((data.size,1))
-        np.save(os.path.join("../npy", "{}_without_outliers.npy".format(dataset_name)), data)
+        np.save(os.path.join("../../npy", "{}_without_outliers.npy".format(dataset_name)), data)
 
 
 
