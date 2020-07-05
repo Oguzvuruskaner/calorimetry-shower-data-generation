@@ -58,11 +58,11 @@ def write_pca_to_csv(
 
     with open(os.path.join(dir_path,"pca_dimension_{}.csv".format(dimension)),"w") as fp:
 
-        fp.write("n_dimension,explained_variance\n")
+        fp.write("n_dimension,explained_variance,loss\n")
 
         for ind,explained_variance in enumerate(variance_array,start=1):
 
-            fp.write("{},{}\n".format(ind,explained_variance))
+            fp.write("{},{},{}\n".format(ind,explained_variance,1-explained_variance))
 
 
 
