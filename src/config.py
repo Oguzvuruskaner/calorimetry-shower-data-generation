@@ -18,7 +18,7 @@ HIT_Z_MIN = -1000
 HIT_R_MIN = -1
 HIT_R_MAX = 1532
 
-DIMENSION = 32
+DIMENSION = 100
 
 ENERGY = 50 #GeV
 
@@ -27,4 +27,4 @@ ENERGY = 50 #GeV
 # in neural network.
 N_COMPONENTS = 25
 
-ROOT_FOLDER = os.path.join("..")
+ROOT_FOLDER = os.path.join(".")

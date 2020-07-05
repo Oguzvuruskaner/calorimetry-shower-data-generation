@@ -169,31 +169,26 @@ def create_generator() -> tf.keras.Model:
         tf.keras.layers.LocallyConnected2D(7, (3, 3)),
         tf.keras.layers.LeakyReLU(),
         tf.keras.layers.BatchNormalization(),
-        tf.keras.layers.Dropout(DROPOUT_RATE),
 
         tf.keras.layers.ZeroPadding2D((1, 1)),
         tf.keras.layers.LocallyConnected2D(5, (3, 3)),
         tf.keras.layers.LeakyReLU(),
         tf.keras.layers.BatchNormalization(),
-        tf.keras.layers.Dropout(DROPOUT_RATE),
 
         tf.keras.layers.ZeroPadding2D((2, 2)),
-        _LocallyConnected2d(9, 5),
+        tf.keras.layers.LocallyConnected2D(9, 5),
         tf.keras.layers.LeakyReLU(),
         tf.keras.layers.BatchNormalization(),
-        tf.keras.layers.Dropout(DROPOUT_RATE),
 
         tf.keras.layers.ZeroPadding2D((1, 1)),
-        _LocallyConnected2d(3, 3),
+        tf.keras.layers.LocallyConnected2D(3, 3),
         tf.keras.layers.LeakyReLU(),
         tf.keras.layers.BatchNormalization(),
-        tf.keras.layers.Dropout(DROPOUT_RATE),
 
         tf.keras.layers.ZeroPadding2D((1, 1)),
         tf.keras.layers.LocallyConnected2D(1, (3, 3)),
         tf.keras.layers.LeakyReLU(),
         tf.keras.layers.BatchNormalization(),
-        tf.keras.layers.Dropout(DROPOUT_RATE),
 
         tf.keras.layers.Flatten(),
 
