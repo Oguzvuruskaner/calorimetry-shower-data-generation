@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 
 from sklearn.decomposition import PCA
 from src.config import N_COMPONENTS,ROOT_FOLDER,DIMENSION
+from math import sqrt
 
 
 class PCALayer(tf.keras.layers.Layer):
@@ -48,14 +49,18 @@ def write_pca_to_csv(
 
     # n_components <= min(num_samples,num_features)
     total_indices = min(data.shape[0], data.shape[1])
+    dimension = int(sqrt(data.shape[1]))
 
     pca = PCA(total_indices)
+    pca.fit(data)
 
-    with open(os.path.join(dir_path,"pca_dimension_{}.csv".format(DIMENSION)),"w") as fp:
+    variance_array= np.cumsum(pca.explained_variance_ratio_)
+
+    with open(os.path.join(dir_path,"pca_dimension_{}.csv".format(dimension)),"w") as fp:
 
         fp.write("n_dimension,explained_variance\n")
 
-        for ind,explained_variance in enumerate(pca,start=1):
+        for ind,explained_variance in enumerate(variance_array,start=1):
 
             fp.write("{},{}\n".format(ind,explained_variance))
 
