@@ -1,12 +1,10 @@
-from src.readRoot import create_jet_images,create_jet_image_array
-from src.scripts.pca import write_pca_to_csv
-from src.scripts.scripts import get_root_files
-
+from src.AutoEncoder import train_autoencoder
+from src.scripts.problems import train_jet_generator
+import tensorflow as tf
 
 
 
 if __name__ == "__main__":
 
-    root_files = get_root_files()
-    write_pca_to_csv()
+    train_autoencoder()
 

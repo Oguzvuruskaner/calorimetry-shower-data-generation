@@ -8,11 +8,10 @@ from src.config import __MODEL_VERSION__
 
 
 
-EPOCHS = 300
+EPOCHS = 1
 STEPS_PER_EPOCH = 100
 
-def continue_training(model_version=__MODEL_VERSION__):
-    ...
+
 
 
 

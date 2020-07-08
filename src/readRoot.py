@@ -126,7 +126,7 @@ def create_jet_images(root_files: [str]):
             tmp_jet[:, 1] = hit_z[i]
             tmp_jet[:, 2] = hit_e[i]
 
-            #I didn't use classical normalization
+            #I didn't use spatial normalization
             #Normalize globally.
             tmp_jet[:, 0] = np.floor((tmp_jet[:, 0] - HIT_R_MIN) / (HIT_R_MAX - HIT_R_MIN) * DIMENSION)
             tmp_jet[:, 1] = np.floor((tmp_jet[:, 1] - HIT_Z_MIN) / (HIT_Z_MAX - HIT_Z_MIN) * DIMENSION)

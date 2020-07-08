@@ -38,14 +38,16 @@ class PCADecoder(PCALayer):
 
 
 def write_pca_to_csv(
-        dir_path= os.path.join(ROOT_FOLDER,"results")
+        data=None,
+        file_path = None
 ):
 
-    data = np.load(
-        os.path.join("npy", "all_jet_images.npy")
-    )
+    if data is None:
+        data = np.load(
+            os.path.join("npy", "all_jet_images.npy")
+        )
 
-    data.resize((data.shape[0], data.shape[1] * data.shape[2]))
+        data.resize((data.shape[0], data.shape[1] * data.shape[2]))
 
     # n_components <= min(num_samples,num_features)
     total_indices = min(data.shape[0], data.shape[1])
@@ -56,7 +58,10 @@ def write_pca_to_csv(
 
     variance_array= np.cumsum(pca.explained_variance_ratio_)
 
-    with open(os.path.join(dir_path,"pca_dimension_{}.csv".format(dimension)),"w") as fp:
+    if file_path is None:
+        file_path = os.path.join(os.path.join("results"),"pca_dimension_{}.csv".format(dimension))
+
+    with open(file_path,"w") as fp:
 
         fp.write("n_dimension,explained_variance,loss\n")
 

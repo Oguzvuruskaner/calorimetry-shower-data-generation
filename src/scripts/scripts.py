@@ -22,14 +22,6 @@ def scale_jets(jets:np.ndarray) -> None:
         jet[:,1] = (jet[:,1]  - HIT_Z_MIN) / (HIT_Z_MAX - HIT_Z_MIN) * DIMENSION
 
 
-
-def get_root_files():
-    return [
-        os.path.join("root_files", root_file)
-        for root_file in os.listdir("root_files")
-        if root_file.endswith(".root")
-    ]
-
 def create_npy_files():
 
     #Get all root files in root_files folder.
