@@ -22,18 +22,18 @@ class JetImageDataset(Dataset):
         self._np_path = None
 
     @BuilderMethod
-    def set_store_path(self, store_path: str):
+    def set_store_path(self, store_path: str) -> "JetImageDataset":
 
         self._store_path = store_path
         return self
 
     @BuilderMethod
-    def set_np_path(self, np_path: str):
+    def set_np_path(self, np_path: str) -> "JetImageDataset":
         self._np_path = np_path
         return self
 
     @BuilderMethod
-    def store(self):
+    def store(self) -> "JetImageDataset":
 
         np.save(
             self._store_path,
@@ -42,7 +42,7 @@ class JetImageDataset(Dataset):
         )
 
     @BuilderMethod
-    def obtain(self, from_npy=False):
+    def obtain(self, from_npy=False) -> "JetImageDataset":
 
         if from_npy == False:
             self._obtain_from_root()

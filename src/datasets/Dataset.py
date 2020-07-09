@@ -18,20 +18,20 @@ class Dataset(IDataset):
         self._logger = Logger(name=name,level=INFO)
 
     @BuilderMethod
-    def add_invertible_transformation(self, transformation: IInvertibleTransformation):
+    def add_invertible_transformation(self, transformation: IInvertibleTransformation) -> "Dataset":
 
         self._pre_stack.appendleft(transformation.transform)
         self._post_stack.appendleft(transformation.inverse_transform)
         return self
 
     @BuilderMethod
-    def apply_all_transformations(self):
+    def apply_all_transformations(self) -> "Dataset":
 
         while len(self._pre_stack) > 0 or len(self._post_stack) > 0:
             self.apply_next_transformation()
 
     @BuilderMethod
-    def apply_next_transformation(self):
+    def apply_next_transformation(self) -> "Dataset":
         transformation = None
 
         if len(self._pre_stack) > 0:
@@ -45,23 +45,23 @@ class Dataset(IDataset):
         self._logger.info("{} | Applied {} Data shape:{}".format(self._logger.name, transformation, self._data.shape))
 
     @BuilderMethod
-    def apply_pre_transformations(self):
+    def apply_pre_transformations(self) -> "Dataset":
         while len(self._pre_stack) > 0:
             self.apply_next_transformation()
 
     @BuilderMethod
-    def apply_post_transformations(self):
+    def apply_post_transformations(self) -> "Dataset":
         while len(self._post_stack) > 0:
             self.apply_next_transformation()
 
 
     @BuilderMethod
-    def add_post_transformation(self, transformation: ITransformation):
+    def add_post_transformation(self, transformation: ITransformation) -> "Dataset":
         self._post_stack.appendleft(transformation.transform)
 
 
     @BuilderMethod
-    def add_pre_transformation(self, transformation: ITransformation):
+    def add_pre_transformation(self, transformation: ITransformation) -> "Dataset":
         self._pre_stack.appendleft(transformation.transform)
 
     def array(self):
