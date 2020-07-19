@@ -47,12 +47,15 @@ class JetImageCompressor(TrainingModel):
 
         return (train_results, test_results)
 
+    @BuilderMethod
     def set_save_dir(self, path: str):
         self._save_dir = path
 
+    @BuilderMethod
     def set_load_dir(self, path: str):
         self._load_dir = path
 
+    @BuilderMethod
     def save(self):
 
         global __MODEL_VERSION__
@@ -61,6 +64,7 @@ class JetImageCompressor(TrainingModel):
         encoder.save(os.path.join(self._save_dir, "encoder_v{}.hdf5".format(__MODEL_VERSION__)))
         decoder.save(os.path.join(self._save_dir, "decoder_v{}.hdf5".format(__MODEL_VERSION__)))
 
+    @BuilderMethod
     def load(self):
 
         global __MODEL_VERSION__

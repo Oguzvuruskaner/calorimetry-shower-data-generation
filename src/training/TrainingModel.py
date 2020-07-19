@@ -17,6 +17,7 @@ class TrainingModel(IModel):
 
     def add_validation_task(self, validation_task:IValidationTask):
         self._validation_tasks.append(validation_task)
+        return self
 
     def run_all_validation_tasks(self):
 

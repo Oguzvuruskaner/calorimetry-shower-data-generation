@@ -1,5 +1,5 @@
 from tqdm import trange
-
+import os
 from src.datasets.Dataset import Dataset
 import uproot
 import numpy as np
@@ -10,7 +10,7 @@ from src.decorators.Builder import BuilderMethod
 class JetImageDataset(Dataset):
 
     def __init__(self,
-                 root_directories: [str] = (),
+                 root_directories: [str] = (os.path.join("root_files"),),
                  store_path=None,
                  dimension=DIMENSION
                  ):
