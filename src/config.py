@@ -10,7 +10,7 @@ __DATA_MAPPING__ = [
     "hit_e"
 ]
 
-__MODEL_VERSION__ = 11
+__MODEL_VERSION__ = 12
 
 HIT_Z_MAX = 1001
 HIT_Z_MIN = -1000
@@ -25,6 +25,6 @@ ENERGY = 50 #GeV
 # N_COMPONENTS should be a square number
 # to use 2d convolutions and locally connected layers
 # in neural network.
-N_COMPONENTS = 100
+N_COMPONENTS = 6
 
 ROOT_FOLDER = os.path.join(".")

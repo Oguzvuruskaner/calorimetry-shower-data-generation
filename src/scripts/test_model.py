@@ -116,7 +116,7 @@ def generate_jet_images(
         results = pca.inverse_transform(results)
 
     for ind,result in tqdm(enumerate(results,start=1)):
-        image = result.reshape((DIMENSION,DIMENSION)) * 50
+        image = result.reshape((DIMENSION,DIMENSION))
 
         save_jet_image(image,os.path.join(root_dir, "{}.png".format(ind)))
 
@@ -127,18 +127,9 @@ def save_jet_image(
         path:str
 ):
 
-    for i in range(len(image)):
-        for j in range(len(image[i])):
-            image[i][j] = 0 if image[i][j] <= 0 else (max(0,math.log10(image[i][j]) + 8)) * 25
-
-
-
-    image = np.array(image, dtype=np.uint8)
-    image = 255 - image
-
-    img = Image.fromarray(image, "L")
-    img.save(path)
-
+    plt.imshow(image,cmap="gray",vmax=1,vmin = 0)
+    plt.savefig(path)
+    plt.close()
 
 
 

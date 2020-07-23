@@ -1,27 +1,51 @@
 import os
 
+import tensorflow as tf
+import numpy as np
+
 from src.datasets.JetImageDataset import JetImageDataset
+from src.scripts.test_model import save_jet_image, generate_jet_images
+from src.side_effects.PlotClosest import PlotClosest
 from src.training.models.autoencoders.JetImageCompressor import JetImageCompressor
 from src.training.validation_tasks.JetImageComparison import JetImageComparison
 from src.transformers.Flatten import Flatten
-from src.transformers.Log10Scaling import Log10Scaling
+from src.scripts.problems import train_jet_generator
+from src.config import DIMENSION, __MODEL_VERSION__,N_COMPONENTS
+from sklearn.decomposition import PCA
 
 if __name__ == "__main__":
 
-    data = JetImageDataset()\
-        .set_np_path(os.path.join("npy","jet_array_128x128.npy"))\
-        .obtain(from_npy=True)\
-        .add_invertible_transformation(Log10Scaling())\
+    pca = PCA(N_COMPONENTS*N_COMPONENTS)
+
+    dataset = JetImageDataset() \
+        .set_np_path(os.path.join("npy", "jet_array_{}x{}.npy".format(DIMENSION,DIMENSION))) \
+        .obtain(from_npy=True) \
         .add_pre_transformation(Flatten())\
         .apply_pre_transformations()\
-        .array()
 
-    model = JetImageCompressor(EPOCHS=1,STEPS=1)
+    data = dataset.array()
 
-    model.add_validation_task(
-        JetImageComparison(
-            os.path.join("results","autoencoder_results_v11")
-        )
-    )
-    model.train(data)
-    model.save()
+    transformed_data = pca.fit_transform(data)
+
+
+    generator,critic,_ = train_jet_generator(transformed_data)
+
+
+    predictions = generator.predict(np.random.normal(0,1,(200,1024)))
+    inverted_predictions = pca.inverse_transform(predictions)
+
+    inverted_predictions.resize((predictions.shape[0],DIMENSION,DIMENSION))
+
+    for pred_no,pred in enumerate(inverted_predictions):
+        save_jet_image(pred,os.path.join("results","jet_images_{}".format(__MODEL_VERSION__),"{}.png".format(pred_no)))
+
+
+
+    plot = PlotClosest(inverted_predictions)
+    plot.transform(data.resize((data.shape[0],DIMENSION,DIMENSION)))
+
+
+
+    generate_jet_images(generator,pca=pca)
+
+

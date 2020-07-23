@@ -8,7 +8,7 @@ from src.config import __MODEL_VERSION__
 
 
 
-EPOCHS = 1
+EPOCHS = 75
 STEPS_PER_EPOCH = 100
 
 
@@ -85,10 +85,11 @@ def very_easy_problem():
     return generator,critic,epoch_losses
 
 
-def train_jet_generator():
+def train_jet_generator(data=None):
 
-    data = np.load(os.path.join(
-        "npy","all_jet_images.npy"
-    ),allow_pickle=True)
+    if data is None:
+        data = np.load(os.path.join(
+            "npy","all_jet_images.npy"
+        ),allow_pickle=True)
 
     return train_model(data,epochs=EPOCHS,steps=STEPS_PER_EPOCH)

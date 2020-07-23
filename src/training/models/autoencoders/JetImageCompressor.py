@@ -5,6 +5,7 @@ import numpy as np
 
 from tqdm import trange
 
+from src.decorators.Builder import BuilderMethod
 from src.decorators.TrainingWrapper import TrainingWrapper
 from src.training.TrainingModel import TrainingModel
 import src.config as train_config
