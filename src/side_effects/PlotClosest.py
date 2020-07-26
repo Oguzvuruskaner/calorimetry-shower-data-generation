@@ -15,14 +15,15 @@ class PlotClosest(ISideEffect):
 
     def transform(self, data):
 
+        # Data should be 3-dimensional array.
+
         for ind,img in enumerate(self._plot_list):
-            # Gets the l2 norm shortest image
             min_score = float("inf")
             min_distance_image = None
 
             for origImage in data:
 
-                current_score =  np.sum(np.sum(img - origImage, axis=0) ** 2)
+                current_score =  np.sum((img - origImage)**2)
                 if current_score < min_score:
                     min_distance_image = np.copy(origImage)
 
@@ -34,7 +35,7 @@ class PlotClosest(ISideEffect):
 
             original_axes = fig.add_subplot(grid_spec[0,0])
             original_axes.set_title("Closest Image",fontsize=40)
-            original_axes.imshow(min_distance_image.reshape(min_distance_image.shape[:-1]),vmax=1,vmin=0,cmap="gray")
+            original_axes.imshow(min_distance_image,vmax=1,vmin=0,cmap="gray")
 
             generated_axes = fig.add_subplot(grid_spec[0,2])
             generated_axes.set_title("Generated Image",fontsize=40)
