@@ -15,7 +15,7 @@ class WriteImages(ISideEffect):
 
         for ind,img in enumerate(data):
             file_path = os.path.join(self._directory,"{}.png".format(ind))
-            plt.imsave(file_path,img,vmax=0,vmin=1,cmap="gray")
+            plt.imsave(file_path,img,vmax=1,vmin=0,cmap="gray")
 
     def __str__(self):
         return "Write Images"
