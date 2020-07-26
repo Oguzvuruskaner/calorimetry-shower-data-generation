@@ -11,7 +11,7 @@ from tqdm import trange
 
 from src.config import DIMENSION,__MODEL_VERSION__,N_COMPONENTS
 from src.scripts.pca import write_pca_to_csv
-from src.scripts.test_model import plot_jet_generator_train_results, generate_jet_images, save_jet_image
+from src.scripts.test_model import plot_jet_generator_train_results
 
 from sklearn.cluster import KMeans
 
@@ -161,7 +161,7 @@ def train_model(
             critic.trainable = True
             generator.trainable = False
 
-            for i in range(4):
+            for i in range(1):
 
 
                 step_losses[step, 0] = critic.train_on_batch(

@@ -2,9 +2,6 @@ import os
 import pickle
 import numpy as np
 import seaborn as sns
-import math
-
-from PIL import Image
 
 from keras.models import  Model
 from tqdm import tqdm, trange
@@ -97,39 +94,7 @@ def plot_jet_generator_train_results(epoch_results:np.array,save_path:str):
     plt.savefig(save_path)
     plt.clf()
 
-def generate_jet_images(
-        generator : Model,
-        count=200,
-        root_dir=os.path.join("results","jet_images_{}".format(__MODEL_VERSION__)),
-        pca : PCA = None
-):
 
-    if not os.path.exists(root_dir):
-        os.mkdir(root_dir)
-
-    print("Generating jet images.")
-    noise_input_size = generator.inputs[0].shape.dims[1]
-
-    results = generator.predict(np.random.normal(size=(count,noise_input_size)))
-
-    if pca:
-        results = pca.inverse_transform(results)
-
-    for ind,result in tqdm(enumerate(results,start=1)):
-        image = result.reshape((DIMENSION,DIMENSION))
-
-        save_jet_image(image,os.path.join(root_dir, "{}.png".format(ind)))
-
-
-
-def save_jet_image(
-        image:np.array,
-        path:str
-):
-
-    plt.imshow(image,cmap="gray",vmax=1,vmin = 0)
-    plt.savefig(path)
-    plt.close()
 
 
 
