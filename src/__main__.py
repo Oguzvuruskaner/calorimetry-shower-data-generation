@@ -42,11 +42,13 @@ if __name__ == "__main__":
     if not os.path.exists(predicted_images_path):
         os.mkdir(predicted_images_path)
 
-    WriteImages(original_images_path).transform(data.reshape((data.shape[0],DIMENSION,DIMENSION)))
+    data.resize((data.shape[0], DIMENSION, DIMENSION))
+
+    WriteImages(original_images_path).transform(data)
     WriteImages(predicted_images_path).transform(predictions)
 
     plot = PlotClosest(predictions,os.path.join("results","image_comparison_{}".format(__MODEL_VERSION__)))
-    plot.transform(data.resize((data.shape[0],DIMENSION,DIMENSION)))
+    plot.transform(data)
 
 
 
