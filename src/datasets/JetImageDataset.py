@@ -81,8 +81,8 @@ class JetImageDataset(Dataset):
                     tmp_jet[:, 1] = hit_z[i]
                     tmp_jet[:, 2] = hit_e[i] / 50
 
-                    tmp_jet[:, 0] = np.floor((tmp_jet[:, 0] - HIT_R_MIN) / (HIT_R_MAX - HIT_R_MIN) * self._dimension)
-                    tmp_jet[:, 1] = np.floor((tmp_jet[:, 1] - HIT_Z_MIN) / (HIT_Z_MAX - HIT_Z_MIN) * self._dimension)
+                    tmp_jet[:, 0] = (tmp_jet[:, 0] - HIT_R_MIN) / (HIT_R_MAX - HIT_R_MIN)
+                    tmp_jet[:, 1] = (tmp_jet[:, 1] - HIT_Z_MIN) / (HIT_Z_MAX - HIT_Z_MIN)
 
                     self._data[current_element] = np.histogram2d(
                         x=tmp_jet[:,0],
