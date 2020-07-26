@@ -79,7 +79,7 @@ class JetImageDataset(Dataset):
 
                     tmp_jet[:, 0] = np.sqrt(hit_x[i] * hit_x[i] + hit_y[i] * hit_y[i])
                     tmp_jet[:, 1] = hit_z[i]
-                    tmp_jet[:, 2] = hit_e[i]
+                    tmp_jet[:, 2] = hit_e[i] / 50
 
                     tmp_jet[:, 0] = np.floor((tmp_jet[:, 0] - HIT_R_MIN) / (HIT_R_MAX - HIT_R_MIN) * self._dimension)
                     tmp_jet[:, 1] = np.floor((tmp_jet[:, 1] - HIT_Z_MIN) / (HIT_Z_MAX - HIT_Z_MIN) * self._dimension)
