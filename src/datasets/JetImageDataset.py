@@ -58,6 +58,11 @@ class JetImageDataset(Dataset):
         root_paths = Dataset.get_root_files_in_multiple_directories(self._root_directories)
         self._bootstrap_data_array(root_paths)
 
+        range_array = np.array([
+            [0,1],
+            [0,1]
+        ])
+
         current_element = 0
 
         for root_path in root_paths:
@@ -76,11 +81,15 @@ class JetImageDataset(Dataset):
                     tmp_jet[:, 1] = hit_z[i]
                     tmp_jet[:, 2] = hit_e[i]
 
-                    tmp_jet[:, 0] = np.floor((tmp_jet[:, 0] - HIT_R_MIN) / (HIT_R_MAX - HIT_R_MIN) * DIMENSION)
-                    tmp_jet[:, 1] = np.floor((tmp_jet[:, 1] - HIT_Z_MIN) / (HIT_Z_MAX - HIT_Z_MIN) * DIMENSION)
+                    tmp_jet[:, 0] = np.floor((tmp_jet[:, 0] - HIT_R_MIN) / (HIT_R_MAX - HIT_R_MIN) * self._dimension)
+                    tmp_jet[:, 1] = np.floor((tmp_jet[:, 1] - HIT_Z_MIN) / (HIT_Z_MAX - HIT_Z_MIN) * self._dimension)
 
-                    for r, z, e in tmp_jet:
-                        self._data[current_element, int(z), int(r)] += e
+                    self._data[current_element] = np.histogram2d(
+                        x=tmp_jet[:,0],
+                        y=tmp_jet[:,1],
+                        weights=tmp_jet[:,2],
+                        range=range_array
+                    )
 
                     current_element += 1
 
@@ -92,7 +101,7 @@ class JetImageDataset(Dataset):
             with uproot.open(root_path) as root:
                 total_jets += len(root[b"showers"][b"hit_x"].array())
 
-        self._data = np.zeros((total_jets, self._dimension, self._dimension, 1))
+        self._data = np.zeros((total_jets, self._dimension, self._dimension))
 
 
 
