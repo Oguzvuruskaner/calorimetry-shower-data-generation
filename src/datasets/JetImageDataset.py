@@ -88,8 +88,9 @@ class JetImageDataset(Dataset):
                         x=tmp_jet[:,0],
                         y=tmp_jet[:,1],
                         weights=tmp_jet[:,2],
-                        range=range_array
-                    )
+                        range=range_array,
+                        bins=[self._dimension,self._dimension]
+                    )[0]
 
                     current_element += 1
 
