@@ -2,16 +2,15 @@ import os
 
 import numpy as np
 
-from src.JetGenerator import train_model
 from src.scripts.test_model import plot_jet_generator_train_results
 from src.config import __MODEL_VERSION__
 
 
 
-EPOCHS = 75
-STEPS_PER_EPOCH = 100
-
-
+EPOCHS = 30
+STEPS_PER_EPOCH = 40
+BATCH_SIZE = 64
+CRITIC_TRAIN_COUNT = 5
 
 
 
@@ -85,11 +84,17 @@ def very_easy_problem():
     return generator,critic,epoch_losses
 
 
-def train_jet_generator(data=None):
+def train_jet_generator(
+        data=None,
+        epochs=EPOCHS,
+        steps=STEPS_PER_EPOCH,
+        batch_size=BATCH_SIZE,
+        critic_train_count=CRITIC_TRAIN_COUNT
+):
 
     if data is None:
         data = np.load(os.path.join(
             "npy","all_jet_images.npy"
         ),allow_pickle=True)
 
-    return train_model(data,epochs=EPOCHS,steps=STEPS_PER_EPOCH)
+    return train_model(data,epochs=epochs,steps=steps,batch_size=batch_size,critic_train_count=critic_train_count)

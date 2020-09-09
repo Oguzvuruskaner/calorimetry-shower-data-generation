@@ -18,13 +18,13 @@ HIT_Z_MIN = -1000
 HIT_R_MIN = -1
 HIT_R_MAX = 1532
 
-DIMENSION = 128
+DIMENSION = 64
 
 ENERGY = 50 #GeV
-
 # N_COMPONENTS should be a square number
 # to use 2d convolutions and locally connected layers
 # in neural network.
-N_COMPONENTS = 6
+LATENT_SIZE = 100
+
 
 ROOT_FOLDER = os.path.join(".")

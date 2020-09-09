@@ -13,6 +13,7 @@ class Critic(N.Module):
         self.conv2 = N.Sequential(*get_conv_block(64,64),N.Conv2d(64,64,5,padding=2,stride=2),N.LeakyReLU(inplace=True),N.BatchNorm2d(64))
         self.conv3 = N.Sequential(*get_conv_block(64,128), N.BatchNorm2d(128))
 
+
         self.output = N.Sequential(
             N.Flatten(),
             N.Linear(input_dim * input_dim * 128 // 16, 1)
