@@ -76,7 +76,7 @@ if __name__ == "__main__":
 
         for step in range(STEPS_PER_EPOCH):
 
-            for i in range(3):
+            for i in range(DISCRIMINATOR_STEP):
 
 
                 train_indices = torch.randint(0, len(x_train), (BATCH_SIZE,))
@@ -140,13 +140,13 @@ if __name__ == "__main__":
         train_results[epoch, 5] = test_classification_loss.item()
         train_results[epoch, 6] = test_loss.item()
 
-        writer.add_scalar("real_train_loss",train_results[epoch,0]/STEPS_PER_EPOCH/5,epoch*STEPS_PER_EPOCH*5)
-        writer.add_scalar("real_classification_loss",train_results[epoch,1]/STEPS_PER_EPOCH/5,epoch*STEPS_PER_EPOCH*5)
-        writer.add_scalar("fake_train_loss",train_results[epoch,2]/STEPS_PER_EPOCH/5,epoch*STEPS_PER_EPOCH*5)
+        writer.add_scalar("real_train_loss",train_results[epoch,0]/STEPS_PER_EPOCH/DISCRIMINATOR_STEP,epoch*STEPS_PER_EPOCH*DISCRIMINATOR_STEP)
+        writer.add_scalar("real_classification_loss",train_results[epoch,1]/STEPS_PER_EPOCH/DISCRIMINATOR_STEP,epoch*STEPS_PER_EPOCH*DISCRIMINATOR_STEP)
+        writer.add_scalar("fake_train_loss",train_results[epoch,2]/STEPS_PER_EPOCH/DISCRIMINATOR_STEP,epoch*STEPS_PER_EPOCH*DISCRIMINATOR_STEP)
         writer.add_scalar("generator_loss",train_results[epoch,3]/STEPS_PER_EPOCH,epoch*STEPS_PER_EPOCH)
         writer.add_scalar("generator_classification_loss",train_results[epoch,4]/STEPS_PER_EPOCH,epoch*STEPS_PER_EPOCH)
-        writer.add_scalar("test_classification_loss",train_results[epoch,5],epoch*STEPS_PER_EPOCH*5)
-        writer.add_scalar("test_loss",train_results[epoch,6],epoch*STEPS_PER_EPOCH*5)
+        writer.add_scalar("test_classification_loss",train_results[epoch,5],epoch*STEPS_PER_EPOCH*DISCRIMINATOR_STEP)
+        writer.add_scalar("test_loss",train_results[epoch,6],epoch*STEPS_PER_EPOCH*DISCRIMINATOR_STEP)
 
 
     latent_variables = get_latent_variables(TEST_IMAGES)
