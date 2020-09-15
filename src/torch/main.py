@@ -54,7 +54,7 @@ if __name__ == "__main__":
 
     generator = Generator(28,latent_size=LATENT_SIZE).to(gpu_device).apply(initialize)
 
-    get_latent_variables = lambda batch_size=BATCH_SIZE: torch.randn((batch_size,LATENT_SIZE)).to(gpu_device)
+    get_latent_variables = lambda batch_size=BATCH_SIZE: torch.randn((batch_size,LATENT_SIZE)).to(gpu_device)*2 -1
 
     get_real_labels = lambda batch_size = BATCH_SIZE: 1 - torch.abs(torch.randn((batch_size,1))*0.05).to(gpu_device)
     get_fake_labels = lambda batch_size = BATCH_SIZE: torch.abs(torch.randn((batch_size,1))*0.05).to(gpu_device)
@@ -62,14 +62,13 @@ if __name__ == "__main__":
 
     critic = Critic(28,NUMBER_OF_LABELS).to(gpu_device).apply(initialize)
 
-    critic_optimizer = O.Adam(critic.parameters(),lr=10e-5)
-    generator_optimizer = O.Adam(generator.parameters(),lr=10e-5)
+    critic_optimizer = O.Adam(critic.parameters(),lr=10e-5,weight_decay=1e-4)
+    generator_optimizer = O.Adam(generator.parameters(),lr=10e-5,weight_decay=1e-4)
 
     train_results = torch.zeros((EPOCH, 7))
     test_train_results = torch.ones((TEST_BATCH, 1)).to(gpu_device)
-    # Get [0 0 0 0 0 0 0 0 0 0 1 ..... 9 9 ] array
-    test_image_labels = torch.arange(0, NUMBER_OF_LABELS).repeat(NUMBER_OF_LABELS).view(NUMBER_OF_LABELS, NUMBER_OF_LABELS).transpose(0, 1).reshape(-1,1).to(gpu_device)
-
+    test_image_labels = torch.randint(0,8,(80,1)).to(gpu_device)
+    test_latent_variables = get_latent_variables(80)
 
     for epoch in trange(EPOCH):
 
@@ -121,13 +120,10 @@ if __name__ == "__main__":
             train_results[epoch, 4] += generator_classification_loss.item()
 
 
-            latent_variables = get_latent_variables(100)
-
-            results = generator(latent_variables,test_image_labels)
-
-            results_image = torchvision.utils.make_grid(results)
-
-            torchvision.utils.save_image(results_image, os.path.join("results","results_step_{}.png".format(epoch*STEPS_PER_EPOCH)))
+        results = generator(test_latent_variables,test_image_labels)
+        results = results.view(80,1,DIMENSION,DIMENSION)
+        results_image = torchvision.utils.make_grid(results,normalize=True)
+        torchvision.utils.save_image(results_image, os.path.join("results","results_step_{}.png".format((1+epoch)*STEPS_PER_EPOCH)))
 
         test_indices = torch.randint(0, len(x_test), (TEST_BATCH,1))
         test_batch = x_test[test_indices]
@@ -152,7 +148,7 @@ if __name__ == "__main__":
     latent_variables = get_latent_variables(TEST_IMAGES)
     results = generator(latent_variables)
 
-    results_image = torchvision.utils.make_grid(results)
+    results_image = torchvision.utils.make_grid(results,range=[0,1])
 
     torchvision.utils.save_image(results_image,"results.png")
 
