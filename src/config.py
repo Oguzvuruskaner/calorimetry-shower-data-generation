@@ -1,30 +1,13 @@
-import os
-
-__DATASETS_WITH_OUTLIERS__ = ["triple_all"]
-
-__DATASETS__ = ["triple_all"]
-
-__DATA_MAPPING__ = [
-    "hit_r",
-    "hit_z",
-    "hit_e"
-]
-
-__MODEL_VERSION__ = 12
-
-HIT_Z_MAX = 1001
-HIT_Z_MIN = -1000
-
-HIT_R_MIN = -1
-HIT_R_MAX = 1532
-
-DIMENSION = 64
-
-ENERGY = 50 #GeV
-# N_COMPONENTS should be a square number
-# to use 2d convolutions and locally connected layers
-# in neural network.
-LATENT_SIZE = 100
-
-
-ROOT_FOLDER = os.path.join(".")
+EPOCH = 400
+STEPS_PER_EPOCH = 200
+BATCH_SIZE = 64
+LATENT_SIZE = 256
+DIMENSION = 28
+TEST_IMAGES = 64
+NUMBER_OF_LABELS = 10
+TEST_BATCH = 64
+DISCRIMINATOR_STEP = 3
+DATAPOINT_PER_FILE = 1000
+IMAGE_NUMBER = 0
+IMAGE_DIMENSION = 32
+TENSOR_CUBE_DIMENSION = 16
