@@ -1,4 +1,3 @@
-import torchvision
 import torch
 import torch.optim as O
 
@@ -6,12 +5,16 @@ from sklearn.model_selection import train_test_split
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import trange
 
-from src.torch.Critic import Critic
-from src.torch.Generator import Generator
+from src.plots import plot_data
+from src.models.Critic import Critic
+from src.models.Generator import Generator
 
 import os
 from src.config import *
-from src.torch.utils import initialize
+from src.utils import initialize, create_or_cleanup
+
+import matplotlib.pyplot as plt
+
 
 
 criterion = torch.nn.BCELoss(reduction="sum")
@@ -20,11 +23,22 @@ criterion = torch.nn.BCELoss(reduction="sum")
 def main(
         data:torch.Tensor,
         labels: torch.Tensor,
-        number_of_labels:int = NUMBER_OF_LABELS
+        number_of_labels:int = NUMBER_OF_LABELS,
+        matrix_dimension = MATRIX_DIMENSION,
 ):
 
+    for basename in os.listdir("train_logs"):
+        os.unlink(os.path.join("train_logs",basename))
 
-    writer = SummaryWriter("train_logs")
+    RESULTS_ROOT_DIR = os.path.join("..","results","training_{}".format(MODEL_VERSION))
+    MODELS_ROOT_DIR = os.path.join("..","models","training_{}".format(MODEL_VERSION))
+    TRAIN_LOGS_DIR = os.path.join("train_logs")
+
+    create_or_cleanup(RESULTS_ROOT_DIR)
+    create_or_cleanup(MODELS_ROOT_DIR)
+    create_or_cleanup(TRAIN_LOGS_DIR)
+
+    writer = SummaryWriter(TRAIN_LOGS_DIR)
 
     gpu_device = torch.device(torch.cuda.current_device())
 
@@ -32,14 +46,14 @@ def main(
     label_embedding = torch.nn.Embedding(number_of_labels, number_of_labels).to(gpu_device)
     label_embedding.weight.data = torch.eye(number_of_labels).to(gpu_device)
 
-    x_train, x_test, y_train, y_test = train_test_split(data, labels, test_size=0.1)
+    x_train, x_test, y_train, y_test = train_test_split(data, labels, test_size=0.05)
 
     x_train = x_train.to(gpu_device)
     y_train = y_train.to(gpu_device)
     x_test = x_test.to(gpu_device)
     y_test = y_test.to(gpu_device)
 
-    generator = Generator(28, latent_size=LATENT_SIZE).to(gpu_device).apply(initialize)
+    generator = Generator(matrix_dimension, latent_size=LATENT_SIZE).to(gpu_device).apply(initialize)
 
     get_latent_variables = lambda batch_size=BATCH_SIZE: torch.randn((batch_size, LATENT_SIZE)).to(
         gpu_device) * 2 - 1
@@ -48,7 +62,7 @@ def main(
         gpu_device)
     get_fake_labels = lambda batch_size=BATCH_SIZE: torch.abs(torch.randn((batch_size, 1)) * 0.05).to(gpu_device)
 
-    critic = Critic(28, number_of_labels).to(gpu_device).apply(initialize)
+    critic = Critic(matrix_dimension, number_of_labels).to(gpu_device).apply(initialize)
 
     critic_optimizer = O.Adam(critic.parameters(), lr=10e-5, weight_decay=1e-4)
     generator_optimizer = O.Adam(generator.parameters(), lr=10e-5, weight_decay=1e-4)
@@ -106,10 +120,18 @@ def main(
             train_results[epoch, 4] += generator_classification_loss.item()
 
         results = generator(test_latent_variables, test_image_labels)
-        results = results.view(80, 1, DIMENSION, DIMENSION)
-        results_image = torchvision.utils.make_grid(results, normalize=True)
-        torchvision.utils.save_image(results_image, os.path.join("results", "results_step_{}.png".format(
-            (1 + epoch) * STEPS_PER_EPOCH)))
+        results = results.view(80, 1, matrix_dimension,matrix_dimension)
+
+        if not epoch % CHECKPOINT_RATE:
+            torch.save(critic,os.path.join(MODELS_ROOT_DIR,"critic_{}.pt".format(epoch)))
+            torch.save(generator,os.path.join(MODELS_ROOT_DIR,"generator_{}.pt".format(epoch)))
+
+        for ind, result in enumerate(results):
+            result = result.view(matrix_dimension, matrix_dimension)
+            fig = plot_data(result.detach().cpu().numpy(), ind)
+            fig.savefig(os.path.join("..", "results", "training_{}".format(MODEL_VERSION),
+                                     "step_{}_{}.png".format((1 + epoch) * STEPS_PER_EPOCH,ind)))
+            plt.close(fig)
 
         test_indices = torch.randint(0, len(x_test), (TEST_BATCH, 1))
         test_batch = x_test[test_indices]
@@ -137,17 +159,17 @@ def main(
                           epoch * STEPS_PER_EPOCH * DISCRIMINATOR_STEP)
         writer.add_scalar("test_loss", train_results[epoch, 6], epoch * STEPS_PER_EPOCH * DISCRIMINATOR_STEP)
 
+
+
     latent_variables = get_latent_variables(TEST_IMAGES)
     results = generator(latent_variables)
 
-    results_image = torchvision.utils.make_grid(results)
+    for ind,result in enumerate(results):
+        result = result.view(matrix_dimension,matrix_dimension)
+        fig = plot_data(result.detach().cpu().numpy(),ind)
+        fig.savefig(os.path.join("..","results","training_{}".format(MODEL_VERSION),"final_{}.png".format(ind)))
+        plt.close(fig)
 
-    torchvision.utils.save_image(results_image, "results.png")
-
-    with open("generator.pt", "wb") as fp:
-        torch.save(generator, fp)
-
-    with open("critic.pt", "wb") as fp:
-        torch.save(critic, fp)
 
     writer.close()
+

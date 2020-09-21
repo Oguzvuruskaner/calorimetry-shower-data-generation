@@ -1,8 +1,13 @@
-from typing import Union
-
 import torch
 import torch.nn as N
+import os
 
+def create_or_cleanup(folder):
+    if os.path.exists(folder):
+        for basename in os.listdir(folder):
+            os.unlink(os.path.join(folder,basename))
+    else:
+        os.mkdir(folder)
 
 get_conv_block = lambda in_channel,out_channel: N.Sequential(
     N.Conv2d(in_channel, out_channel, 5,padding=2),
