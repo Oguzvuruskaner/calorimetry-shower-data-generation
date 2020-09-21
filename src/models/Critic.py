@@ -1,21 +1,21 @@
 import torch
 import torch.nn as N
-import torch.nn.functional as F
 
-from src.torch.MinibatchDiscrimination import MinibatchDiscrimination
-from src.torch.ResidualLayer import ResidualLayer
-from src.torch.utils import get_conv_block
+from src.models.MinibatchDiscrimination import MinibatchDiscrimination
+from src.models.ResidualLayer import ResidualLayer
+from src.utils import get_conv_block, get_dense_block
 
 
 class Critic(N.Module):
 
-    def __init__(self, input_dim: int,number_of_labels,depth_parameter = 3):
+    def __init__(self, input_dim: int,number_of_labels,depth_parameter = 6):
         super().__init__()
 
 
         self._input_dim = input_dim
         self._number_of_labels = number_of_labels
         self._depth_parameter = depth_parameter
+
 
         self.conv1 = N.Sequential(get_conv_block(1, 16), get_conv_block(16, 32))
         self.conv2 = N.Sequential(*depth_parameter * [ResidualLayer(get_conv_block(32, 32))])
@@ -38,7 +38,8 @@ class Critic(N.Module):
             N.Flatten(),
             N.Linear(input_dim * input_dim * 2,128),
             N.BatchNorm1d(128),
-            N.LeakyReLU(inplace=True)
+            N.LeakyReLU(inplace=True),
+            *depth_parameter*[ResidualLayer(get_dense_block(128,128))]
         )
 
         self.minibatch_discrimination = MinibatchDiscrimination(

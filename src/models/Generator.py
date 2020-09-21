@@ -1,13 +1,12 @@
-import torch
 import torch.nn as N
 
-from src.torch.ResidualLayer import ResidualLayer
-from src.torch.utils import get_conv_block,get_dense_block
+from src.models.ResidualLayer import ResidualLayer
+from src.utils import get_conv_block,get_dense_block
 
 
 class Generator(N.Module):
 
-    def __init__(self,output_size,latent_size = 100,number_of_labels = 10,depth_parameter=3):
+    def __init__(self,output_size,latent_size = 100,number_of_labels = 10,depth_parameter=6):
         super().__init__()
 
         self._output_size = output_size
