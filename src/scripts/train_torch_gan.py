@@ -17,16 +17,20 @@ from src.torch.utils import initialize
 criterion = torch.nn.BCELoss(reduction="sum")
 
 
-def main(data,labels):
+def main(
+        data:torch.Tensor,
+        labels: torch.Tensor,
+        number_of_labels:int = NUMBER_OF_LABELS
+):
 
 
-    writer = SummaryWriter("mnist_logs")
+    writer = SummaryWriter("train_logs")
 
     gpu_device = torch.device(torch.cuda.current_device())
 
     # Taken by Rajarshee Mitra from https://discuss.pytorch.org/t/convert-int-into-one-hot-format/507/10
-    label_embedding = torch.nn.Embedding(NUMBER_OF_LABELS, NUMBER_OF_LABELS).to(gpu_device)
-    label_embedding.weight.data = torch.eye(NUMBER_OF_LABELS).to(gpu_device)
+    label_embedding = torch.nn.Embedding(number_of_labels, number_of_labels).to(gpu_device)
+    label_embedding.weight.data = torch.eye(number_of_labels).to(gpu_device)
 
     x_train, x_test, y_train, y_test = train_test_split(data, labels, test_size=0.1)
 
@@ -44,7 +48,7 @@ def main(data,labels):
         gpu_device)
     get_fake_labels = lambda batch_size=BATCH_SIZE: torch.abs(torch.randn((batch_size, 1)) * 0.05).to(gpu_device)
 
-    critic = Critic(28, NUMBER_OF_LABELS).to(gpu_device).apply(initialize)
+    critic = Critic(28, number_of_labels).to(gpu_device).apply(initialize)
 
     critic_optimizer = O.Adam(critic.parameters(), lr=10e-5, weight_decay=1e-4)
     generator_optimizer = O.Adam(generator.parameters(), lr=10e-5, weight_decay=1e-4)
@@ -65,7 +69,7 @@ def main(data,labels):
 
                 real_output, label_output = critic(train_batch)
                 classification_loss = criterion(label_output,
-                                                label_embedding(label_batch).view(-1, NUMBER_OF_LABELS).detach())
+                                                label_embedding(label_batch).view(-1, number_of_labels).detach())
                 real_loss = criterion(real_output, get_real_labels())
 
                 train_results[epoch, 0] += real_loss.item()
@@ -91,7 +95,7 @@ def main(data,labels):
             fake_output, label_output = critic(fake_images)
 
             generator_classification_loss = criterion(label_output,
-                                                      label_embedding(labels).view(-1, NUMBER_OF_LABELS).detach())
+                                                      label_embedding(labels).view(-1, number_of_labels).detach())
             generator_loss = criterion(fake_output, get_real_labels())
 
             generator.zero_grad()
@@ -114,7 +118,7 @@ def main(data,labels):
         test_output, test_class = critic(test_batch)
         test_loss = criterion(test_output, test_train_results)
         test_classification_loss = criterion(test_class,
-                                             label_embedding(test_labels).view(-1, NUMBER_OF_LABELS).detach())
+                                             label_embedding(test_labels).view(-1, number_of_labels).detach())
 
         train_results[epoch, 5] = test_classification_loss.item()
         train_results[epoch, 6] = test_loss.item()
@@ -140,10 +144,10 @@ def main(data,labels):
 
     torchvision.utils.save_image(results_image, "results.png")
 
-    with open("generator.pkl", "wb") as fp:
+    with open("generator.pt", "wb") as fp:
         torch.save(generator, fp)
 
-    with open("critic.pkl", "wb") as fp:
+    with open("critic.pt", "wb") as fp:
         torch.save(critic, fp)
 
     writer.close()
