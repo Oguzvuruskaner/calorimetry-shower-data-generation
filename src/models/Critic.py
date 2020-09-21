@@ -8,7 +8,7 @@ from src.utils import get_conv_block, get_dense_block
 
 class Critic(N.Module):
 
-    def __init__(self, input_dim: int,number_of_labels,depth_parameter = 6):
+    def __init__(self, input_dim: int,number_of_labels,depth_parameter = 9):
         super().__init__()
 
 
@@ -18,9 +18,9 @@ class Critic(N.Module):
 
 
         self.conv1 = N.Sequential(get_conv_block(1, 16), get_conv_block(16, 32))
-        self.conv2 = N.Sequential(*depth_parameter * [ResidualLayer(get_conv_block(32, 32))])
-        self.conv3 = N.Sequential(*depth_parameter * [ResidualLayer(get_conv_block(32, 32))])
-        self.conv4 = N.Sequential(*depth_parameter * [ResidualLayer(get_conv_block(32, 32))])
+        self.conv2 = N.Sequential(*depth_parameter * [ResidualLayer(lambda:get_conv_block(32, 32))])
+        self.conv3 = N.Sequential(*depth_parameter * [ResidualLayer(lambda:get_conv_block(32, 32))])
+        self.conv4 = N.Sequential(*depth_parameter * [ResidualLayer(lambda:get_conv_block(32, 32))])
 
         self.downsample1 = N.Sequential(
             N.Conv2d(32,32,5,padding=2,stride=2),
@@ -39,7 +39,7 @@ class Critic(N.Module):
             N.Linear(input_dim * input_dim * 2,128),
             N.BatchNorm1d(128),
             N.LeakyReLU(inplace=True),
-            *depth_parameter*[ResidualLayer(get_dense_block(128,128))]
+            *depth_parameter*[ResidualLayer(lambda:get_dense_block(128,128))]
         )
 
         self.minibatch_discrimination = MinibatchDiscrimination(
