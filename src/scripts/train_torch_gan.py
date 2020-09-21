@@ -10,7 +10,7 @@ from src.torch.Critic import Critic
 from src.torch.Generator import Generator
 
 import os
-from src.torch.config import *
+from src.config import *
 from src.torch.utils import initialize
 
 
