@@ -123,19 +123,20 @@ def main(
             train_results[epoch, 3] += generator_loss.item()
             train_results[epoch, 4] += generator_classification_loss.item()
 
-        results = generator(test_latent_variables, test_image_labels)
-        results = results.view(80, 1, matrix_dimension,matrix_dimension)
+        results = generator(test_latent_variables, test_image_labels).detach()
 
         if not epoch % CHECKPOINT_RATE:
             torch.save(critic,os.path.join(MODELS_ROOT_DIR,"critic_{}.pt".format(epoch)))
             torch.save(generator,os.path.join(MODELS_ROOT_DIR,"generator_{}.pt".format(epoch)))
 
-        for ind, result in enumerate(results):
-            result = result.view(matrix_dimension, matrix_dimension)
-            fig = plot_data(result.detach().cpu().numpy(), ind)
-            fig.savefig(os.path.join("..", "results", "training_{}".format(MODEL_VERSION),
-                                     "step_{}_{}.png".format((1 + epoch) * STEPS_PER_EPOCH,ind)))
-            plt.close(fig)
+
+        fig = plot_multiple_images(
+            results.view(len(results), matrix_dimension, matrix_dimension).cpu().numpy()
+            , 8)
+        fig.savefig(
+            os.path.join("..", "results", "training_{}".format(MODEL_VERSION),
+                         "step_{}.png".format(STEPS_PER_EPOCH*(epoch+1))))
+        plt.close(fig)
 
         test_indices = torch.randint(0, len(x_test), (TEST_BATCH, 1))
         test_batch = x_test[test_indices]
@@ -166,13 +167,14 @@ def main(
 
 
     latent_variables = get_latent_variables(TEST_IMAGES)
-    results = generator(latent_variables)
+    results = generator(latent_variables).detach()
 
-    for ind,result in enumerate(results):
-        result = result.view(matrix_dimension,matrix_dimension)
-        fig = plot_data(result.detach().cpu().numpy(),ind)
-        fig.savefig(os.path.join("..","results","training_{}".format(MODEL_VERSION),"final_{}.png".format(ind)))
-        plt.close(fig)
+    fig = plot_multiple_images(
+        results.view(len(results), matrix_dimension, matrix_dimension).cpu().numpy(),
+        8)
+    fig.savefig(os.path.join("..", "results", "training_{}".format(MODEL_VERSION), "final.png"))
+    plt.close(fig)
+
 
 
     writer.close()
