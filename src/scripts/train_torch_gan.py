@@ -5,7 +5,7 @@ from sklearn.model_selection import train_test_split
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import trange
 
-from src.plots import plot_data
+from src.plots import plot_data, plot_multiple_images
 from src.models.Critic import Critic
 from src.models.Generator import Generator
 
@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 
 
 
-criterion = torch.nn.BCELoss(reduction="sum")
+criterion = torch.nn.BCELoss(reduction="mean")
 
 
 def main(
@@ -25,6 +25,8 @@ def main(
         labels: torch.Tensor,
         number_of_labels:int = NUMBER_OF_LABELS,
         matrix_dimension = MATRIX_DIMENSION,
+        generator = None,
+        critic = None
 ):
 
     for basename in os.listdir("train_logs"):
@@ -53,7 +55,8 @@ def main(
     x_test = x_test.to(gpu_device)
     y_test = y_test.to(gpu_device)
 
-    generator = Generator(matrix_dimension, latent_size=LATENT_SIZE).to(gpu_device).apply(initialize)
+    if generator == None:
+        generator = Generator(matrix_dimension, latent_size=LATENT_SIZE).to(gpu_device).apply(initialize)
 
     get_latent_variables = lambda batch_size=BATCH_SIZE: torch.randn((batch_size, LATENT_SIZE)).to(
         gpu_device) * 2 - 1
@@ -62,7 +65,8 @@ def main(
         gpu_device)
     get_fake_labels = lambda batch_size=BATCH_SIZE: torch.abs(torch.randn((batch_size, 1)) * 0.05).to(gpu_device)
 
-    critic = Critic(matrix_dimension, number_of_labels).to(gpu_device).apply(initialize)
+    if critic == None:
+        critic = Critic(matrix_dimension, number_of_labels).to(gpu_device).apply(initialize)
 
     critic_optimizer = O.Adam(critic.parameters(), lr=10e-5, weight_decay=1e-4)
     generator_optimizer = O.Adam(generator.parameters(), lr=10e-5, weight_decay=1e-4)
