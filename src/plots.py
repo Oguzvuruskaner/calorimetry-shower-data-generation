@@ -44,13 +44,13 @@ def plot_multiple_images(data,nrow : int):
     for i in range(nrow-1):
         for j in range(ncolumn):
             ax = sup_figure.add_subplot(grid_spec[i, j])
-            plot_data(data[i*ncolumn + j],counter,ax=ax)
+            plot_data(data[i*ncolumn + j]+1e-40,counter,ax=ax)
             counter += 1
             sup_figure.colorbar(ax.images[0])
 
     for i in range(remainder):
         ax = sup_figure.add_subplot(grid_spec[nrow-1, i])
-        plot_data(data[i * ncolumn + j], counter, ax=ax)
+        plot_data(data[(nrow-1) * ncolumn + i]+1e-40, counter, ax=ax)
         sup_figure.colorbar(ax.images[0])
 
     return sup_figure
