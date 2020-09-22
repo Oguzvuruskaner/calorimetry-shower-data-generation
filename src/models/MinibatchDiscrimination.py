@@ -28,7 +28,7 @@ class MinibatchDiscrimination(torch.nn.Module):
 
         #N x B x C
         M = M.view(-1,self.B,self.C)
-        O = torch.zeros(M.shape[0],self.B,requires_grad=False).to(self.T.get_device()).detach()
+        O = torch.zeros(M.shape[0],self.B,requires_grad=False).to(x.device).detach()
 
         for i in range(x.shape[0]):
             O[i,:] = torch.exp(-torch.abs(M-M[i]).sum(2)).sum(0)
