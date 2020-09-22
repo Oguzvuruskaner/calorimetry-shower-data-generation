@@ -5,7 +5,7 @@ import numpy as np
 from src.config import PLOT_ERROR, HIT_E_MAX
 
 
-def plot_data(data,title:str,ax=None):
+def plot_data(data : np.array,title:str,ax=None):
 
     from src.config import HIT_Z_MIN, HIT_Z_MAX,HIT_E_MAX,HIT_R_MAX
 
@@ -16,10 +16,9 @@ def plot_data(data,title:str,ax=None):
 
     axes_image = ax.imshow(
         data,
-        norm=colors.LogNorm(vmin=PLOT_ERROR,vmax=HIT_E_MAX),
+        norm=colors.LogNorm(vmin = max(data.min(axis=-1),PLOT_ERROR),vmax=HIT_E_MAX),
         extent=[HIT_Z_MIN,HIT_Z_MAX,HIT_R_MAX,0]
     )
-
     ax.set_xlabel("Z")
     ax.set_ylabel("R")
     ax.set_title(title)
@@ -43,7 +42,6 @@ def plot_multiple_images(data,nrow : int):
     grid_spec = sup_figure.add_gridspec(nrow, ncolumn)
 
     data *= HIT_E_MAX
-    data[data < PLOT_ERROR] = PLOT_ERROR
 
     for i in range(nrow-1):
         for j in range(ncolumn):
