@@ -31,8 +31,8 @@ def initialize(m:N.Module):
 
     classname = m.__class__.__name__
     if "Conv" in classname or "Linear" in classname:
-        N.init.kaiming_uniform_(m.weight.data,0.05)
-        N.init.zeros_(m.bias.data)
+        N.init.normal_(m.weight.data,0.005,0.001)
+        N.init.constant_(m.bias.data,0)
 
 def wasserstein_loss(output,target):
 
