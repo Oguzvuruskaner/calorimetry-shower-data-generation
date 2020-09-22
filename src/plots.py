@@ -1,8 +1,8 @@
 import matplotlib.pyplot as plt
-import matplotlib.colors as colors
 import numpy as np
+from matplotlib.colors import LogNorm
 
-from src.config import PLOT_ERROR, HIT_E_MAX
+from src.config import HIT_E_MAX, PLOT_ERROR
 
 
 def plot_data(data : np.array,title:str,ax=None):
@@ -16,9 +16,11 @@ def plot_data(data : np.array,title:str,ax=None):
 
     axes_image = ax.imshow(
         data,
-        norm=colors.LogNorm(vmin = max(data.min(axis=-1),PLOT_ERROR),vmax=HIT_E_MAX),
+        norm=LogNorm( vmin=PLOT_ERROR,vmax=HIT_E_MAX),
         extent=[HIT_Z_MIN,HIT_Z_MAX,HIT_R_MAX,0]
     )
+    axes_image.cmap.set_bad(color=axes_image.cmap(PLOT_ERROR))
+
     ax.set_xlabel("Z")
     ax.set_ylabel("R")
     ax.set_title(title)
@@ -48,12 +50,13 @@ def plot_multiple_images(data,nrow : int):
             ax = sup_figure.add_subplot(grid_spec[i, j])
             plot_data(data[i*ncolumn + j],counter,ax=ax)
             counter += 1
-            sup_figure.colorbar(ax.images[0])
+            plt.colorbar(ax.images[0])
 
     for i in range(remainder):
         ax = sup_figure.add_subplot(grid_spec[nrow-1, i])
         plot_data(data[(nrow-1) * ncolumn + i], counter, ax=ax)
-        sup_figure.colorbar(ax.images[0])
+        counter +=1
+        plt.colorbar(ax.images[0])
 
     return sup_figure
 
