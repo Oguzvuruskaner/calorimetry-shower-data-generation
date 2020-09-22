@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import numpy as np
 
-from src.config import PLOT_ERROR
+from src.config import PLOT_ERROR, HIT_E_MAX
 
 
 def plot_data(data,title:str,ax=None):
@@ -15,11 +15,11 @@ def plot_data(data,title:str,ax=None):
         ax : plt.Axes = fig.add_subplot(111)
 
     axes_image = ax.imshow(
-        data * 50,
+        data,
         norm=colors.LogNorm(vmin=PLOT_ERROR,vmax=HIT_E_MAX),
         extent=[HIT_Z_MIN,HIT_Z_MAX,HIT_R_MAX,0]
     )
-    axes_image.cmap.set_bad(color=axes_image.cmap(PLOT_ERROR))
+
     ax.set_xlabel("Z")
     ax.set_ylabel("R")
     ax.set_title(title)
@@ -42,7 +42,7 @@ def plot_multiple_images(data,nrow : int):
     sup_figure.subplots_adjust(wspace=0.75,hspace=0.75)
     grid_spec = sup_figure.add_gridspec(nrow, ncolumn)
 
-
+    data *= HIT_E_MAX
     data[data < PLOT_ERROR] = PLOT_ERROR
 
     for i in range(nrow-1):
