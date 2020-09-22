@@ -131,7 +131,7 @@ def main(
 
 
         fig = plot_multiple_images(
-            results.view(len(results), matrix_dimension, matrix_dimension).cpu().numpy()
+            results.view(len(results), matrix_dimension, matrix_dimension).cpu().numpy()*HIT_E_MAX
             , 8)
         fig.savefig(
             os.path.join("..", "results", "training_{}".format(MODEL_VERSION),
@@ -170,7 +170,7 @@ def main(
     results = generator(latent_variables).detach()
 
     fig = plot_multiple_images(
-        results.view(len(results), matrix_dimension, matrix_dimension).cpu().numpy(),
+        results.view(len(results), matrix_dimension, matrix_dimension).cpu().numpy()*HIT_E_MAX,
         8)
     fig.savefig(os.path.join("..", "results", "training_{}".format(MODEL_VERSION), "final.png"))
     plt.close(fig)
