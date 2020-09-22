@@ -14,8 +14,12 @@ class Swapout(N.Module):
 
     def forward(self,x):
 
-        module_device = self._inner_layer.get_device()
-        x_survival_matrix = self.x_bernoulli.sample(x.shape).to(module_device)
-        f_x_survival_matrix = self.f_x_bernoulli.sample(x.shape).to(module_device)
+        if self.training:
+            module_device = self._inner_layer.get_device()
+            x_survival_matrix = self.x_bernoulli.sample(x.shape).to(module_device)
+            f_x_survival_matrix = self.f_x_bernoulli.sample(x.shape).to(module_device)
 
-        return x * x_survival_matrix + f_x_survival_matrix * self._inner_layer(x)
+            return x * x_survival_matrix + f_x_survival_matrix * self._inner_layer(x)
+
+        else:
+            return x + self._inner_layer(x)
