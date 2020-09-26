@@ -89,7 +89,9 @@ def main(
 
         critic.train()
         generator.train()
-
+        critic_optimizer.zero_grad()
+        generator_optimizer.zero_grad()
+        
         for step in range(STEPS_PER_EPOCH):
 
             for i in range(DISCRIMINATOR_STEP):
@@ -114,7 +116,7 @@ def main(
                 if gradient_penalty:
                     gp_loss = calculate_gradient_penalty(critic,train_batch,fake_images)
                     gp_loss.backward()
-                    wasserstein_loss += gp_loss
+                    wasserstein_loss += gp_loss.item()
 
 
                 train_results[epoch, 0] += wasserstein_loss.item()
