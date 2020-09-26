@@ -34,15 +34,13 @@ def calculate_gradient_penalty(critic,real_data,fake_data):
     gradients = torch.autograd.grad(
         outputs = interpolation_results,
         inputs = interpolations,
-        grad_outputs=get_real_labels()
+        grad_outputs=torch.ones(interpolation_results.size()).to(GPU_DEVICE),
+        create_graph=True
     )[0]
 
-    gradient_penalty = (gradients.norm(2,dim=1) -1)
-    gradient_penalty *= gradient_penalty
-    gradient_penalty = gradient_penalty.mean()
+    gradient_penalty = ((gradients.norm(2,dim=1) -1)**2).mean() * LAMBDA
 
-
-    return LAMBDA * gradient_penalty
+    return gradient_penalty
 
 
 
@@ -83,6 +81,7 @@ def main(
     critic_optimizer = O.Adam(critic.parameters(), lr=LEARNING_RATE)
     generator_optimizer = O.Adam(generator.parameters(), lr=LEARNING_RATE)
 
+
     train_results = torch.zeros((EPOCH, 3))
     test_latent_variables = get_latent_variables(80)
 
@@ -94,27 +93,32 @@ def main(
         for step in range(STEPS_PER_EPOCH):
 
             for i in range(DISCRIMINATOR_STEP):
+                critic.zero_grad()
 
                 train_indices = torch.randint(0, len(x_train), (BATCH_SIZE,))
                 train_batch = x_train[train_indices]
 
                 real_output = critic(train_batch).mean()
+                real_loss = torch.abs(real_output-get_real_labels(1))
+                real_loss.backward()
 
                 z = get_latent_variables()
                 fake_images = generator(z)
 
                 fake_output = critic(fake_images.detach()).mean()
+                fake_loss = torch.abs(fake_output-get_fake_labels(1))
+                fake_loss.backward()
 
                 wasserstein_loss = fake_output - real_output
 
                 if gradient_penalty:
-                    wasserstein_loss += calculate_gradient_penalty(critic,train_batch,fake_images)
+                    gp_loss = calculate_gradient_penalty(critic,train_batch,fake_images)
+                    gp_loss.backward()
+                    wasserstein_loss += gp_loss
 
 
                 train_results[epoch, 0] += wasserstein_loss.item()
 
-                critic.zero_grad()
-                wasserstein_loss.backward()
                 critic_optimizer.step()
 
 
@@ -123,10 +127,9 @@ def main(
             fake_images = generator(z)
             fake_output = critic(fake_images)
 
-            generator_loss = -fake_output.mean()
-
-            generator_loss.backward()
+            generator_loss = torch.abs(fake_output - get_real_labels()).mean()
             generator.zero_grad()
+            generator_loss.backward()
             generator_optimizer.step()
 
             train_results[epoch, 1] += generator_loss.item()
@@ -158,6 +161,7 @@ def main(
 
         writer.add_scalar("Wasserstein Loss", train_results[epoch, 0] / STEPS_PER_EPOCH / DISCRIMINATOR_STEP,
                           epoch * STEPS_PER_EPOCH * DISCRIMINATOR_STEP)
+
         writer.add_scalar("generator_loss", train_results[epoch, 1] / STEPS_PER_EPOCH, epoch * STEPS_PER_EPOCH)
         writer.add_scalar("test_loss", train_results[epoch, 2], epoch * STEPS_PER_EPOCH * DISCRIMINATOR_STEP)
 
