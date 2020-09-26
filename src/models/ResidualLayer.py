@@ -2,9 +2,8 @@ import torch.nn as N
 
 class ResidualLayer(N.Module):
 
-    def __init__(self,inner_layer :N.Module ):
+    def __init__(self ):
         super().__init__()
-        self.inner = inner_layer
 
 
     def forward(self,x):

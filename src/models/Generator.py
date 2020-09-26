@@ -5,6 +5,8 @@ from src.models.Swapout import Swapout
 from src.utils import get_conv_block,get_dense_block
 
 
+
+
 class Generator(N.Module):
 
     def __init__(self,output_size,latent_size = LATENT_SIZE,depth_parameter=DEPTH_PARAMETER):

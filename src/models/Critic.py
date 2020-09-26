@@ -3,6 +3,7 @@ import torch.nn as N
 
 from src.config import DEPTH_PARAMETER
 from src.models.MinibatchDiscrimination import MinibatchDiscrimination
+from src.models.ResidualLayer import ResidualLayer
 from src.models.Swapout import Swapout
 from src.utils import get_conv_block, get_dense_block
 
@@ -24,20 +25,20 @@ class Critic(N.Module):
         self.downsample1 = N.Sequential(
             N.Conv2d(32,32,5,padding=2,stride=2),
             N.BatchNorm2d(32),
-            N.PReLU()
+            N.LeakyReLU()
         )
 
         self.downsample2 = N.Sequential(
             N.Conv2d(32, 32, 5, padding=2, stride=2),
             N.BatchNorm2d(32),
-            N.PReLU()
+            N.LeakyReLU()
         )
 
         self.l1 = N.Sequential(
             N.Flatten(),
             N.Linear(input_dim * input_dim * 2,128),
             N.BatchNorm1d(128),
-            N.PReLU(),
+            N.LeakyReLU(),
             *depth_parameter * [Swapout(get_dense_block(128, 128))]
         )
 
@@ -47,7 +48,7 @@ class Critic(N.Module):
 
         self.real_fake = N.Sequential(
             N.Linear(64 + 128, 128),
-            N.PReLU(),
+            N.LeakyReLU(),
             N.Linear(128,1),
             N.Tanh()
         )
