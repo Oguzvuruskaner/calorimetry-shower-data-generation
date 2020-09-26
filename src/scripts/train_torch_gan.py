@@ -169,7 +169,7 @@ def main(
         writer.add_scalar("real_test_loss", train_results[epoch, 2], epoch * STEPS_PER_EPOCH * DISCRIMINATOR_STEP)
         writer.add_scalar("fake_test_loss", train_results[epoch, 3], epoch * STEPS_PER_EPOCH * DISCRIMINATOR_STEP)
         writer.add_scalar("Critic Learning Rate",critic_optimizer.param_groups[0]["lr"])
-        writer.add_scalar("Critic Learning Rate",generator_optimizer.param_groups[0]["lr"])
+        writer.add_scalar("Generator Learning Rate",generator_optimizer.param_groups[0]["lr"])
 
 
     latent_variables = get_latent_variables(TEST_IMAGES)
