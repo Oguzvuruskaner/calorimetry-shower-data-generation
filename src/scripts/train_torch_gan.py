@@ -78,8 +78,8 @@ def main(
     if critic == None:
         critic = Critic(matrix_dimension).to(GPU_DEVICE).apply(initialize)
 
-    critic_optimizer = O.Adagrad(critic.parameters(), lr=LEARNING_RATE*100,weight_decay=1e-5,lr_decay=0.5)
-    generator_optimizer = O.Adagrad(generator.parameters(), lr=LEARNING_RATE,weight_decay=1e-5,lr_decay=0.5)
+    critic_optimizer = O.Adagrad(critic.parameters(), lr=LEARNING_RATE*100,weight_decay=1e-5)
+    generator_optimizer = O.Adagrad(generator.parameters(), lr=LEARNING_RATE,weight_decay=1e-5)
 
 
     train_results = torch.zeros((EPOCH, 4))
@@ -155,9 +155,9 @@ def main(
         test_batch = x_test[test_indices]
 
         critic.eval()
-        test_output = critic(test_batch)
+        test_output = -critic(test_batch)
         real_test_loss = test_output.mean()
-        fake_test_loss = critic(results).mean()
+        fake_test_loss = -critic(results).mean()
 
         train_results[epoch, 2] = real_test_loss.item()
         train_results[epoch, 3] = fake_test_loss.item()
@@ -166,10 +166,10 @@ def main(
                           epoch * STEPS_PER_EPOCH * DISCRIMINATOR_STEP)
 
         writer.add_scalar("generator_loss", train_results[epoch, 1] / STEPS_PER_EPOCH, epoch * STEPS_PER_EPOCH)
-        writer.add_scalar("real_test_loss", train_results[epoch, 2], epoch * STEPS_PER_EPOCH * DISCRIMINATOR_STEP)
-        writer.add_scalar("fake_test_loss", train_results[epoch, 3], epoch * STEPS_PER_EPOCH * DISCRIMINATOR_STEP)
+        writer.add_scalar("Real Test Output", train_results[epoch, 2], epoch * STEPS_PER_EPOCH * DISCRIMINATOR_STEP)
+        writer.add_scalar("Fake Test Output", train_results[epoch, 3], epoch * STEPS_PER_EPOCH * DISCRIMINATOR_STEP)
         writer.add_scalar("Critic Learning Rate",critic_optimizer.param_groups[0]["lr"])
-        writer.add_scalar("Generator Learning Rate",generator_optimizer.param_groups[0]["lr"])
+        writer.add_scalar("Generator Learning Rate",generator_optimizer.param_groups[0]["lr"],epoch * STEPS_PER_EPOCH)
 
 
     latent_variables = get_latent_variables(TEST_IMAGES)
