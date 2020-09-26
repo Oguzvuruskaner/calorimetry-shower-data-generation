@@ -1,6 +1,7 @@
 import torch
 import torch.nn as N
 
+from src.config import DEPTH_PARAMETER
 from src.models.MinibatchDiscrimination import MinibatchDiscrimination
 from src.models.Swapout import Swapout
 from src.utils import get_conv_block, get_dense_block
@@ -8,14 +9,12 @@ from src.utils import get_conv_block, get_dense_block
 
 class Critic(N.Module):
 
-    def __init__(self, input_dim: int,number_of_labels,depth_parameter = 3):
+    def __init__(self, input_dim: int,depth_parameter = DEPTH_PARAMETER):
         super().__init__()
 
 
         self._input_dim = input_dim
-        self._number_of_labels = number_of_labels
         self._depth_parameter = depth_parameter
-
 
         self.conv1 = N.Sequential(get_conv_block(1, 16), get_conv_block(16, 32))
         self.conv2 = N.Sequential(*depth_parameter * [Swapout(get_conv_block(32, 32))])
@@ -48,18 +47,10 @@ class Critic(N.Module):
 
         self.real_fake = N.Sequential(
             N.Linear(64 + 128, 128),
-            N.SELU(inplace=True),
+            N.PReLU(),
             N.Linear(128,1),
-            N.Sigmoid()
+            N.Hardtanh()
         )
-
-        self.label = N.Sequential(
-            N.Linear(64+128,128),
-            N.SELU(inplace=True),
-            N.Linear(128,number_of_labels),
-            N.Softmax(dim=1)
-        )
-
 
 
 
@@ -74,4 +65,4 @@ class Critic(N.Module):
         O = self.minibatch_discrimination(x)
         x = torch.cat([O,x],1)
 
-        return self.real_fake(x),self.label(x)
+        return self.real_fake(x)

@@ -1,20 +1,19 @@
 import torch.nn as N
 
+from src.config import LATENT_SIZE, DEPTH_PARAMETER
 from src.models.Swapout import Swapout
 from src.utils import get_conv_block,get_dense_block
 
 
 class Generator(N.Module):
 
-    def __init__(self,output_size,latent_size = 100,number_of_labels = 10,depth_parameter=3):
+    def __init__(self,output_size,latent_size = LATENT_SIZE,depth_parameter=DEPTH_PARAMETER):
         super().__init__()
 
         self._output_size = output_size
         self._latent_size = latent_size
-        self._number_of_labels = number_of_labels
         self._depth_parameter = depth_parameter
 
-        self.embedding = N.Embedding(number_of_labels,self._latent_size)
 
         self.l1 = N.Sequential(*depth_parameter*[Swapout(get_dense_block(latent_size,latent_size))])
         self.l2 = get_dense_block(latent_size,output_size*output_size)
@@ -38,16 +37,12 @@ class Generator(N.Module):
         )
 
 
+    def forward(self, x):
 
-    def forward(self, z,label):
 
-        embedding = self.embedding(label)
-        embbeding = embedding.view(z.shape[0],-1)
-        x = embbeding * z
 
         x = self.l1(x)
         x = self.l2(x)
-
         x = x.view(-1,16,self._output_size//4,self._output_size//4)
 
         x = self.conv1(x)
