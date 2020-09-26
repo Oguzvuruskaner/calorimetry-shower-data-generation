@@ -24,20 +24,20 @@ class Critic(N.Module):
         self.downsample1 = N.Sequential(
             N.Conv2d(32,32,5,padding=2,stride=2),
             N.BatchNorm2d(32),
-            N.LeakyReLU(inplace=True)
+            N.PReLU()
         )
 
         self.downsample2 = N.Sequential(
             N.Conv2d(32, 32, 5, padding=2, stride=2),
             N.BatchNorm2d(32),
-            N.LeakyReLU(inplace=True)
+            N.PReLU()
         )
 
         self.l1 = N.Sequential(
             N.Flatten(),
             N.Linear(input_dim * input_dim * 2,128),
             N.BatchNorm1d(128),
-            N.LeakyReLU(inplace=True),
+            N.PReLU(),
             *depth_parameter * [Swapout(get_dense_block(128, 128))]
         )
 
@@ -49,7 +49,7 @@ class Critic(N.Module):
             N.Linear(64 + 128, 128),
             N.PReLU(),
             N.Linear(128,1),
-            N.Hardtanh()
+            N.Tanh()
         )
 
 
