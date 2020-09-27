@@ -13,11 +13,11 @@ class MinibatchDiscrimination(torch.nn.Module):
         out_dim : It corresponds to B variable.
 
     """
-    def __init__(self,input_dim,out_dim,C):
+    def __init__(self,input_dim:int,out_dim:int,C:int):
         super().__init__()
 
-        self.T = N.Parameter(torch.Tensor(input_dim,out_dim,C))
-        N.init.kaiming_uniform_(self.T)
+        self.T = N.Parameter(torch.zeros([input_dim,out_dim,C]))
+        N.init.kaiming_normal_(self.T)
         self.A = input_dim
         self.B = out_dim
         self.C = C
