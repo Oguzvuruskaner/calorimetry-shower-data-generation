@@ -32,11 +32,8 @@ def initialize(m:N.Module):
     classname = m.__class__.__name__
     if "Conv" in classname or "Linear" in classname:
         N.init.kaiming_normal_(m.weight.data)
-        N.init.constant_(m.bias.data,0)
+        N.init.uniform_(m.bias.data,-0.02,0.02)
 
 
-def get_next_iter(dataloader):
-
-    return next(iter(dataloader))
 
 
