@@ -28,8 +28,8 @@ def calculate_gradient_penalty(critic,real_data,fake_data):
     rand_array = torch.rand((BATCH_SIZE,1)).to(GPU_DEVICE)
     interpolations = rand_array * real_data + (1-rand_array) * fake_data
     interpolations = interpolations.to(GPU_DEVICE)
-    
-    interpolation_results = critic(interpolations)
+
+    _,interpolation_results = critic(interpolations)
 
     gradients = torch.autograd.grad(
         outputs = interpolation_results,
@@ -38,7 +38,7 @@ def calculate_gradient_penalty(critic,real_data,fake_data):
         create_graph=True
     )[0]
 
-    gradient_penalty = ((gradients.norm(2,dim=1) -1)**2).mean() * LAMBDA
+    gradient_penalty = ((gradients.norm(2,dim=1) -1)**2) * LAMBDA
 
     return gradient_penalty
 
@@ -78,13 +78,15 @@ def main(
     if critic == None:
         critic = Critic(matrix_dimension).to(GPU_DEVICE).apply(initialize)
 
-    critic_optimizer = O.Adagrad(critic.parameters(), lr=LEARNING_RATE*100,weight_decay=1e-5)
-    generator_optimizer = O.Adagrad(generator.parameters(), lr=LEARNING_RATE,weight_decay=1e-5)
+    critic_optimizer = O.Adam(critic.parameters(), lr=LEARNING_RATE,weight_decay=1e-4)
+    generator_optimizer = O.Adam(generator.parameters(), lr=LEARNING_RATE,weight_decay=1e-4)
+
+    O.lr_scheduler.ReduceLROnPlateau(critic_optimizer,patience=2,factor=0.5)
+    O.lr_scheduler.ReduceLROnPlateau(generator_optimizer,patience=2,factor=0.5)
 
 
     train_results = torch.zeros((EPOCH, 4))
     test_latent_variables = get_latent_variables(64)
-
 
 
     for epoch in trange(EPOCH):
@@ -99,44 +101,62 @@ def main(
 
             for i in range(DISCRIMINATOR_STEP):
 
+                critic.zero_grad()
+
                 train_indices = torch.randint(0, len(x_train), (BATCH_SIZE,))
                 train_batch = x_train[train_indices]
 
-                real_loss = critic(train_batch).mean()
+                _,real_loss = critic(train_batch)
+                real_loss = real_loss.mean()
 
                 z = get_latent_variables()
                 fake_images = generator(z)
 
-                fake_loss = critic(fake_images.detach()).mean()
-
-                wasserstein_loss = -real_loss + fake_loss
+                _,fake_loss = critic(fake_images.detach())
+                fake_loss = fake_loss.mean()
+                wasserstein_loss = fake_loss - real_loss
 
 
                 if gradient_penalty:
                     gp_loss = calculate_gradient_penalty(critic,train_batch,fake_images)
-                    wasserstein_loss += gp_loss
+                    wasserstein_loss += gp_loss.mean()
 
-                critic.zero_grad()
+                critic_optimizer.zero_grad()
                 wasserstein_loss.backward()
                 critic_optimizer.step()
 
                 train_results[epoch, 0] += wasserstein_loss.item()
 
 
-
+            generator_optimizer.zero_grad()
             z = get_latent_variables()
 
             fake_images = generator(z)
-            generator_loss = -critic(fake_images).mean()
-
-            generator.zero_grad()
+            _,generator_loss = critic(fake_images)
+            generator_loss = -generator_loss.mean()
             generator_loss.backward()
-            generator_optimizer.step()
+
+            train_indices = torch.randint(0, len(x_train), (BATCH_SIZE,))
+            train_batch = x_train[train_indices]
+            real_features,_ = critic(train_batch)
+            real_features = real_features.mean()
+
+            z = get_latent_variables()
+            fake_images = generator(z)
+            fake_features, _ = critic(fake_images)
+            fake_features = fake_features.mean()
+
+            feature_loss = torch.abs(fake_features - real_features).mean()
+            feature_loss.backward()
 
             train_results[epoch, 1] += generator_loss.item()
+            generator_optimizer.step()
 
         generator.eval()
         results = generator(test_latent_variables).detach()
+
+        torch.save(critic, os.path.join(MODELS_ROOT_DIR, "critic_last.pt"))
+        torch.save(generator, os.path.join(MODELS_ROOT_DIR, "generator_last.pt"))
 
         if not epoch % CHECKPOINT_RATE:
             torch.save(critic,os.path.join(MODELS_ROOT_DIR,"critic_{}.pt".format(epoch)))
@@ -155,9 +175,10 @@ def main(
         test_batch = x_test[test_indices]
 
         critic.eval()
-        test_output = -critic(test_batch)
+        _,test_output = critic(test_batch)
         real_test_loss = test_output.mean()
-        fake_test_loss = -critic(results).mean()
+        _,fake_test_loss = critic(results)
+        fake_test_loss = fake_test_loss.mean()
 
         train_results[epoch, 2] = real_test_loss.item()
         train_results[epoch, 3] = fake_test_loss.item()
@@ -168,7 +189,7 @@ def main(
         writer.add_scalar("generator_loss", train_results[epoch, 1] / STEPS_PER_EPOCH, epoch * STEPS_PER_EPOCH)
         writer.add_scalar("Real Test Output", train_results[epoch, 2], epoch * STEPS_PER_EPOCH * DISCRIMINATOR_STEP)
         writer.add_scalar("Fake Test Output", train_results[epoch, 3], epoch * STEPS_PER_EPOCH * DISCRIMINATOR_STEP)
-        writer.add_scalar("Critic Learning Rate",critic_optimizer.param_groups[0]["lr"])
+        writer.add_scalar("Critic Learning Rate",critic_optimizer.param_groups[0]["lr"],epoch * STEPS_PER_EPOCH * DISCRIMINATOR_STEP)
         writer.add_scalar("Generator Learning Rate",generator_optimizer.param_groups[0]["lr"],epoch * STEPS_PER_EPOCH)
 
 
@@ -181,7 +202,6 @@ def main(
         8)
     fig.savefig(os.path.join("..", "results", "training_{}".format(MODEL_VERSION), "final.png"))
     plt.close(fig)
-
 
 
     writer.close()
