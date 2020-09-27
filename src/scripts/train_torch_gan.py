@@ -85,7 +85,7 @@ def main(
     O.lr_scheduler.ReduceLROnPlateau(generator_optimizer,patience=2,factor=0.5)
 
 
-    train_results = torch.zeros((EPOCH, 4))
+    train_results = torch.zeros((EPOCH, 5))
     test_latent_variables = get_latent_variables(64)
 
 
@@ -181,8 +181,8 @@ def main(
         _,fake_test_loss = critic(results)
         fake_test_loss = fake_test_loss.mean()
 
-        train_results[epoch, 2] = real_test_loss.item()
-        train_results[epoch, 3] = fake_test_loss.item()
+        train_results[epoch, 3] = real_test_loss.item()
+        train_results[epoch, 4] = fake_test_loss.item()
 
         writer.add_scalar("Wasserstein Loss", train_results[epoch, 0] / STEPS_PER_EPOCH / DISCRIMINATOR_STEP,
                           epoch * STEPS_PER_EPOCH * DISCRIMINATOR_STEP)
