@@ -150,6 +150,7 @@ def main(
             feature_loss.backward()
 
             train_results[epoch, 1] += generator_loss.item()
+            train_results[epoch, 2] += feature_loss.item()
             generator_optimizer.step()
 
         generator.eval()
@@ -186,9 +187,10 @@ def main(
         writer.add_scalar("Wasserstein Loss", train_results[epoch, 0] / STEPS_PER_EPOCH / DISCRIMINATOR_STEP,
                           epoch * STEPS_PER_EPOCH * DISCRIMINATOR_STEP)
 
-        writer.add_scalar("generator_loss", train_results[epoch, 1] / STEPS_PER_EPOCH, epoch * STEPS_PER_EPOCH)
-        writer.add_scalar("Real Test Output", train_results[epoch, 2], epoch * STEPS_PER_EPOCH * DISCRIMINATOR_STEP)
-        writer.add_scalar("Fake Test Output", train_results[epoch, 3], epoch * STEPS_PER_EPOCH * DISCRIMINATOR_STEP)
+        writer.add_scalar("Generator Loss", train_results[epoch, 1] / STEPS_PER_EPOCH, epoch * STEPS_PER_EPOCH)
+        writer.add_scalar("Generator Feature Loss", train_results[epoch, 2], epoch * STEPS_PER_EPOCH )
+        writer.add_scalar("Real Test Output", train_results[epoch, 3], epoch * STEPS_PER_EPOCH * DISCRIMINATOR_STEP)
+        writer.add_scalar("Fake Test Output", train_results[epoch, 4], epoch * STEPS_PER_EPOCH * DISCRIMINATOR_STEP)
         writer.add_scalar("Critic Learning Rate",critic_optimizer.param_groups[0]["lr"],epoch * STEPS_PER_EPOCH * DISCRIMINATOR_STEP)
         writer.add_scalar("Generator Learning Rate",generator_optimizer.param_groups[0]["lr"],epoch * STEPS_PER_EPOCH)
 
