@@ -2,11 +2,9 @@ import torch
 import torch.nn as N
 
 from src.config import DEPTH_PARAMETER
+from src.models.BottleneckSwapout import BottleneckSwapout
 from src.models.MinibatchDiscrimination import MinibatchDiscrimination
-from src.models.ResidualLayer import ResidualLayer
-from src.models.Swapout import Swapout
-from src.utils import get_conv_block, get_dense_block
-
+from src.models.conv_blocks import ConvBlock
 
 class Critic(N.Module):
 
@@ -17,40 +15,32 @@ class Critic(N.Module):
         self._input_dim = input_dim
         self._depth_parameter = depth_parameter
 
-        self.conv1 = N.Sequential(get_conv_block(1, 16), get_conv_block(16, 32))
-        self.conv2 = N.Sequential(*depth_parameter * [Swapout(get_conv_block(32, 32))])
-        self.conv3 = N.Sequential(*depth_parameter * [Swapout(get_conv_block(32, 32))])
-        self.conv4 = N.Sequential(*depth_parameter * [Swapout(get_conv_block(32, 32))])
-
-        self.downsample1 = N.Sequential(
-            N.Conv2d(32,32,5,padding=2,stride=2),
-            N.BatchNorm2d(32),
-            N.LeakyReLU()
+        self.conv1 = N.Sequential(
+            ConvBlock(1, 8),
+            ConvBlock(8, 16),
+            * depth_parameter * [BottleneckSwapout(16, 16)]
         )
 
-        self.downsample2 = N.Sequential(
-            N.Conv2d(32, 32, 5, padding=2, stride=2),
-            N.BatchNorm2d(32),
-            N.LeakyReLU()
+        self.conv2 = N.Sequential(
+            ConvBlock(16,32,5,2,2),
+            ConvBlock(32, 64),
+            *depth_parameter * [BottleneckSwapout(64, 64)]
         )
 
-        self.l1 = N.Sequential(
-            N.Flatten(),
-            N.Linear(input_dim * input_dim * 2,128),
-            N.BatchNorm1d(128),
-            N.LeakyReLU(),
-            *depth_parameter * [Swapout(get_dense_block(128, 128))]
+        self.conv3 = N.Sequential(
+            ConvBlock(64, 128,5, 2, 2),
+            *depth_parameter * [BottleneckSwapout(128, 128)],
+            N.AdaptiveAvgPool2d((1,1)),
+            N.Flatten()
         )
 
         self.minibatch_discrimination = MinibatchDiscrimination(
             128,64,32
         )
 
-        self.real_fake = N.Sequential(
-            N.Linear(64 + 128, 128),
-            N.LeakyReLU(),
-            N.Linear(128,1),
-            N.Tanh()
+        self.output = N.Sequential(
+            N.Linear(64 + 128, 1),
+            N.Sigmoid()
         )
 
 
@@ -59,11 +49,10 @@ class Critic(N.Module):
 
         x = x.view(x.shape[0],1,self._input_dim,self._input_dim)
         x = self.conv1(x)
-        x = self.downsample1(self.conv2(x))
-        x = self.downsample2(self.conv3(x))
-        x = self.conv4(x)
-        x = self.l1(x)
+        x = self.conv2(x)
+        x = self.conv3(x)
         O = self.minibatch_discrimination(x)
+
         x = torch.cat([O,x],1)
 
-        return self.real_fake(x)
+        return x,self.output(x)
