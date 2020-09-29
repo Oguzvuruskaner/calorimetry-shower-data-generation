@@ -78,8 +78,8 @@ def main(
     if critic == None:
         critic = Critic(matrix_dimension).to(GPU_DEVICE).apply(critic_init)
 
-    critic_optimizer = O.Adam(critic.parameters(), lr=LEARNING_RATE*100,weight_decay=1e-4)
-    generator_optimizer = O.Adam(generator.parameters(), lr=LEARNING_RATE,weight_decay=1e-4)
+    critic_optimizer = O.Adam(critic.parameters(), lr=LEARNING_RATE*20)
+    generator_optimizer = O.Adam(generator.parameters(), lr=LEARNING_RATE)
 
     critic_optimizer_scheduler = O.lr_scheduler.ExponentialLR(critic_optimizer,gamma=.95)
     generator_optimizer_scheduler = O.lr_scheduler.ExponentialLR(generator_optimizer, gamma=.98)
@@ -117,7 +117,7 @@ def main(
                 z = get_latent_variables()
                 fake_images = generator(z)
                 fake_output = critic(fake_images.detach()).mean()
-                train_results[epoch, 0] += fake_output.item()
+                train_results[epoch, 1] += fake_output.item()
 
                 wasserstein_loss = fake_output - real_output
 
@@ -154,8 +154,7 @@ def main(
             train_results[epoch, 3] += feature_loss.item()
             generator_optimizer.step()
 
-        critic_optimizer_scheduler.step()
-        generator_optimizer_scheduler.step()
+
 
         generator.eval()
         results = generator(reference_variables).detach()
@@ -196,6 +195,10 @@ def main(
         writer.add_scalar("Generator Learning Rate",generator_optimizer.param_groups[0]["lr"],epoch * STEPS_PER_EPOCH)
         if gradient_penalty:
             writer.add_scalar("Gradient Penalty", train_results[epoch, 6] / STEPS_PER_EPOCH, epoch * STEPS_PER_EPOCH)
+
+        critic_optimizer_scheduler.step()
+        generator_optimizer_scheduler.step()
+
 
     latent_variables = get_latent_variables(TEST_IMAGES)
     generator.eval()
