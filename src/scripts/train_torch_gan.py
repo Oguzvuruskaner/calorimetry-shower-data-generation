@@ -81,8 +81,8 @@ def main(
     critic_optimizer = O.Adam(critic.parameters(), lr=LEARNING_RATE*100,weight_decay=1e-4)
     generator_optimizer = O.Adam(generator.parameters(), lr=LEARNING_RATE,weight_decay=1e-4)
 
-    O.lr_scheduler.ExponentialLR(critic_optimizer,gamma=.999)
-    O.lr_scheduler.ExponentialLR(critic_optimizer, gamma=.999)
+    critic_optimizer_scheduler = O.lr_scheduler.ExponentialLR(critic_optimizer,gamma=.95)
+    generator_optimizer_scheduler = O.lr_scheduler.ExponentialLR(generator_optimizer, gamma=.98)
 
     if gradient_penalty:
         train_results = torch.zeros((EPOCH, 7))
@@ -153,6 +153,9 @@ def main(
             train_results[epoch, 2] += generator_loss.item()
             train_results[epoch, 3] += feature_loss.item()
             generator_optimizer.step()
+
+        critic_optimizer_scheduler.step(epoch)
+        generator_optimizer_scheduler.step(epoch)
 
         generator.eval()
         results = generator(reference_variables).detach()
