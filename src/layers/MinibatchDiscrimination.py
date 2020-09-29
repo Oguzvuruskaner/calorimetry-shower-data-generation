@@ -33,6 +33,6 @@ class MinibatchDiscrimination(torch.nn.Module):
         for i in range(x.shape[0]):
             O[i,:] = torch.exp(-torch.abs(M-M[i]).sum(2)).sum(0)
 
-        return O
+        return O.detach()
 
 
