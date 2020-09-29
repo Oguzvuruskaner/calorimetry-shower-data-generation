@@ -32,14 +32,14 @@ def generator_init(m:N.Module):
     classname = m.__class__.__name__
     if "Conv" in classname or "Linear" in classname:
         N.init.kaiming_normal_(m.weight.data)
-        N.init.normal_(m.bias.data,0,0.01)
+        N.init.uniform_(m.bias.data,-0.01,0.01)
 
 def critic_init(m:N.Module):
 
     classname = m.__class__.__name__
     if "Conv" in classname or "Linear" in classname:
         N.init.kaiming_uniform_(m.weight.data)
-        N.init.uniform(m.bias.data,-0.05,0.05)
+        N.init.uniform_(m.bias.data,-0.01,0.01)
 
 
 

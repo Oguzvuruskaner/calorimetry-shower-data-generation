@@ -186,7 +186,7 @@ def main(
         train_results[epoch, 5] = fake_test_result.item()
 
         writer.add_scalar("Real Train Output", train_results[epoch, 0] / STEPS_PER_EPOCH,DISCRIMINATOR_STEP * epoch * STEPS_PER_EPOCH)
-        writer.add_scalar("Real Train Output", train_results[epoch, 1] / STEPS_PER_EPOCH,DISCRIMINATOR_STEP * epoch * STEPS_PER_EPOCH)
+        writer.add_scalar("Fake Train Output", train_results[epoch, 1] / STEPS_PER_EPOCH,DISCRIMINATOR_STEP * epoch * STEPS_PER_EPOCH)
         writer.add_scalar("Generator Loss", train_results[epoch, 2] / STEPS_PER_EPOCH, epoch * STEPS_PER_EPOCH)
         writer.add_scalar("Generator Feature Loss", train_results[epoch, 3], epoch * STEPS_PER_EPOCH )
         writer.add_scalar("Real Test Output", train_results[epoch, 4], epoch * STEPS_PER_EPOCH * DISCRIMINATOR_STEP)
