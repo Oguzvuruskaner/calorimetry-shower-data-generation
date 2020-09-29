@@ -55,9 +55,9 @@ class Critic(N.Module):
         x = self.conv2(x)
         x = self.conv3(x)
         O = self.minibatch_discrimination(x)
+        x = torch.cat([O, x], 1)
 
         if feature_matching:
-            x = torch.cat([O,x],1)
             return x
         else:
             return self.output(x)
