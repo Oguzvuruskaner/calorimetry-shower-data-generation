@@ -16,7 +16,7 @@ class MinibatchDiscrimination(torch.nn.Module):
     def __init__(self,input_dim:int,out_dim:int,C:int):
         super().__init__()
 
-        self.T = N.Parameter(torch.zeros([input_dim,out_dim,C]))
+        self.T = N.Parameter(torch.empty([input_dim,out_dim,C]))
         N.init.kaiming_normal_(self.T)
         self.A = input_dim
         self.B = out_dim
@@ -28,7 +28,7 @@ class MinibatchDiscrimination(torch.nn.Module):
 
         #N x B x C
         M = M.view(-1,self.B,self.C)
-        O = torch.zeros(M.shape[0],self.B,requires_grad=False).to(x.device).detach()
+        O = torch.zeros(M.shape[0],self.B,requires_grad=False).to(x.device)
 
         for i in range(x.shape[0]):
             O[i,:] = torch.exp(-torch.abs(M-M[i]).sum(2)).sum(0)
