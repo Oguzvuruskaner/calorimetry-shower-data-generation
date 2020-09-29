@@ -78,7 +78,7 @@ def main(
     if critic == None:
         critic = Critic(matrix_dimension).to(GPU_DEVICE).apply(initialize)
 
-    critic_optimizer = O.Adam(critic.parameters(), lr=LEARNING_RATE,weight_decay=1e-4)
+    critic_optimizer = O.Adam(critic.parameters(), lr=LEARNING_RATE*100,weight_decay=1e-4)
     generator_optimizer = O.Adam(generator.parameters(), lr=LEARNING_RATE,weight_decay=1e-4)
 
     O.lr_scheduler.ExponentialLR(critic_optimizer,gamma=.999)
