@@ -1,6 +1,6 @@
 import torch.nn as N
 
-from src.models.BottleneckLayer import BottleneckLayer
+from src.layers.BottleneckLayer import BottleneckLayer
 
 
 class BottleneckSwapout(BottleneckLayer):
