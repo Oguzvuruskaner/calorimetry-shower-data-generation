@@ -1,8 +1,8 @@
 import torch.nn as N
 
 from src.config import LATENT_SIZE, DEPTH_PARAMETER
-from src.models.BottleneckSwapout import BottleneckSwapout
-from src.models.conv_blocks import ConvBlock,DeConvBlock
+from src.layers.BottleneckSwapout import BottleneckSwapout
+from src.layers.conv_blocks import ConvBlock,DeConvBlock
 
 
 class Generator(N.Module):
@@ -22,22 +22,29 @@ class Generator(N.Module):
             ConvBlock(16,32,relu=True),
             ConvBlock(32, 64,relu=True),
             ConvBlock(64, 128,relu=True),
-            N.Sequential(*depth_parameter * [BottleneckSwapout(128, 128,relu=True)])
+            BottleneckSwapout(128, 128, relu=True),
+            BottleneckSwapout(128, 128, relu=True),
+            BottleneckSwapout(128, 128, relu=True),
 
         )
 
         self.conv2 = N.Sequential(
             DeConvBlock(128,64),
-            N.Sequential(*depth_parameter * [BottleneckSwapout(64, 64,relu=True)])
+            BottleneckSwapout(64, 64, relu=True),
+            BottleneckSwapout(64, 64, relu=True),
+            BottleneckSwapout(64, 64, relu=True),
+
         )
 
         self.conv3 = N.Sequential(
             DeConvBlock(64, 32),
-            N.Sequential(*depth_parameter * [BottleneckSwapout(32, 32,relu=True)]),
+            BottleneckSwapout(32, 32, relu=True),
+            BottleneckSwapout(32, 32, relu=True),
+            BottleneckSwapout(32, 32, relu=True),
         )
         self.conv4 = N.Sequential(
-            N.Conv2d(32,1,5,padding=2),
-            N.Sigmoid(),
+            N.Conv2d(32,1,1),
+            N.ReLU(),
             N.Flatten()
         )
 
