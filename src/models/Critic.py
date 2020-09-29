@@ -43,7 +43,7 @@ class Critic(N.Module):
 
         self.output = N.Sequential(
             N.Linear(64 + 128, 1),
-            N.Sigmoid()
+            N.Tanh()
         )
 
 
