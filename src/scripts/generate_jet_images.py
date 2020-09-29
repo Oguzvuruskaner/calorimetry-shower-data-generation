@@ -1,5 +1,5 @@
 import numpy as np
-import uproot as uproot
+import uproot
 import os
 from math import ceil
 
@@ -27,7 +27,7 @@ def generate():
         os.path.join(ROOT_DIR,filename)
         for filename in os.listdir(ROOT_DIR)
         if filename.endswith(".root")
-    ]
+    ][1:-1]
 
 
     for file_index,root_file in enumerate(root_files):
