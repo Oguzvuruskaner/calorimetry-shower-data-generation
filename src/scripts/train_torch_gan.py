@@ -154,8 +154,8 @@ def main(
             train_results[epoch, 3] += feature_loss.item()
             generator_optimizer.step()
 
-        critic_optimizer_scheduler.step(epoch)
-        generator_optimizer_scheduler.step(epoch)
+        critic_optimizer_scheduler.step()
+        generator_optimizer_scheduler.step()
 
         generator.eval()
         results = generator(reference_variables).detach()
