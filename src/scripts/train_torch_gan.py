@@ -11,7 +11,7 @@ from src.models.Generator import Generator
 
 import os
 from src.config import *
-from src.utils import initialize, create_or_cleanup
+from src.utils import create_or_cleanup, critic_init, generator_init
 
 import matplotlib.pyplot as plt
 
@@ -73,10 +73,10 @@ def main(
     x_test = x_test.to(GPU_DEVICE)
 
     if generator == None:
-        generator = Generator(matrix_dimension).to(GPU_DEVICE).apply(initialize)
+        generator = Generator(matrix_dimension).to(GPU_DEVICE).apply(generator_init)
 
     if critic == None:
-        critic = Critic(matrix_dimension).to(GPU_DEVICE).apply(initialize)
+        critic = Critic(matrix_dimension).to(GPU_DEVICE).apply(critic_init)
 
     critic_optimizer = O.Adam(critic.parameters(), lr=LEARNING_RATE*100,weight_decay=1e-4)
     generator_optimizer = O.Adam(generator.parameters(), lr=LEARNING_RATE,weight_decay=1e-4)
@@ -180,11 +180,11 @@ def main(
         test_batch = x_test[test_indices]
 
         critic.eval()
-        real_test_loss = critic(test_batch).mean()
-        fake_test_loss = critic(results).mean()
+        real_test_result = critic(test_batch).mean()
+        fake_test_result = critic(results).mean()
 
-        train_results[epoch, 4] = real_test_loss.item()
-        train_results[epoch, 5] = fake_test_loss.item()
+        train_results[epoch, 4] = real_test_result.item()
+        train_results[epoch, 5] = fake_test_result.item()
 
         writer.add_scalar("Real Train Output", train_results[epoch, 0] / STEPS_PER_EPOCH,DISCRIMINATOR_STEP * epoch * STEPS_PER_EPOCH)
         writer.add_scalar("Real Train Output", train_results[epoch, 1] / STEPS_PER_EPOCH,DISCRIMINATOR_STEP * epoch * STEPS_PER_EPOCH)

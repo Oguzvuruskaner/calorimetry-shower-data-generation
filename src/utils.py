@@ -27,12 +27,19 @@ get_dense_block = lambda input_width,out_width:N.Sequential(
     N.LeakyReLU()
 )
 
-def initialize(m:N.Module):
+def generator_init(m:N.Module):
 
     classname = m.__class__.__name__
     if "Conv" in classname or "Linear" in classname:
-        N.init.kaiming_normal_(m.weight.data)
-        N.init.uniform_(m.bias.data,-0.02,0.02)
+        N.init.constant(m.weight.data,0)
+        N.init.constant(m.bias.data,0)
+
+def critic_init(m:N.Module):
+
+    classname = m.__class__.__name__
+    if "Conv" in classname or "Linear" in classname:
+        N.init.kaiming_uniform_(m.weight.data)
+        N.init.constant(m.bias.data,0)
 
 
 
