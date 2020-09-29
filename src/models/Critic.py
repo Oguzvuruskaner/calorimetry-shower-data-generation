@@ -2,9 +2,9 @@ import torch
 import torch.nn as N
 
 from src.config import DEPTH_PARAMETER
-from src.models.BottleneckSwapout import BottleneckSwapout
-from src.models.MinibatchDiscrimination import MinibatchDiscrimination
-from src.models.conv_blocks import ConvBlock
+from src.layers.BottleneckSwapout import BottleneckSwapout
+from src.layers.MinibatchDiscrimination import MinibatchDiscrimination
+from src.layers.conv_blocks import ConvBlock
 
 class Critic(N.Module):
 
@@ -18,18 +18,21 @@ class Critic(N.Module):
         self.conv1 = N.Sequential(
             ConvBlock(1, 8),
             ConvBlock(8, 16),
-            * depth_parameter * [BottleneckSwapout(16, 16)]
+            BottleneckSwapout(16, 16),
+            ConvBlock(16,32),
+            BottleneckSwapout(32,32),
         )
 
         self.conv2 = N.Sequential(
-            ConvBlock(16,32,5,2,2),
-            ConvBlock(32, 64),
-            *depth_parameter * [BottleneckSwapout(64, 64)]
+            ConvBlock(32,64,5,2,2),
+            BottleneckSwapout(64, 64),
+            BottleneckSwapout(64, 64)
         )
 
         self.conv3 = N.Sequential(
             ConvBlock(64, 128,5, 2, 2),
-            *depth_parameter * [BottleneckSwapout(128, 128)],
+            BottleneckSwapout(128, 128),
+            BottleneckSwapout(128, 128),
             N.AdaptiveAvgPool2d((1,1)),
             N.Flatten()
         )
@@ -45,7 +48,7 @@ class Critic(N.Module):
 
 
 
-    def forward(self, x):
+    def forward(self, x,feature_matching = False):
 
         x = x.view(x.shape[0],1,self._input_dim,self._input_dim)
         x = self.conv1(x)
@@ -53,6 +56,8 @@ class Critic(N.Module):
         x = self.conv3(x)
         O = self.minibatch_discrimination(x)
 
-        x = torch.cat([O,x],1)
-
-        return x,self.output(x)
+        if feature_matching:
+            x = torch.cat([O,x],1)
+            return x
+        else:
+            return self.output(x)
