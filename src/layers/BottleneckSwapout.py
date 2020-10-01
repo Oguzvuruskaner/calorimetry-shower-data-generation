@@ -9,7 +9,7 @@ class BottleneckSwapout(BottleneckLayer):
         super().__init__(in_channels,out_channels,relu = relu)
 
         self.f_x_dropout = N.Dropout(1-f_x_survival_prob)
-        self.x_dropout = N.Dropout(1-x_survival_prob )
+        self.x_dropout = N.Dropout(1-x_survival_prob)
 
 
     def forward(self,x):
