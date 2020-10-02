@@ -1,30 +1,59 @@
+import os
+
 import numpy as np
 from tqdm import tqdm
 
 from src.datasets import DATASETS, entries
 import uproot4 as uproot
+import matplotlib.pyplot as plt
 
-def analyze_dataset(entry_directory,histogram_bins = 100,step_size = 128):
+FEATURES = [
+    "hit_x",
+    "hit_y",
+    "hit_z",
+    "hit_e"
+]
+UNIT_OF_MEASURES = [
+    "cm",
+    "cm",
+    "cm",
+    "GeV"
+]
+
+def iterate_array(arr:uproot.TBranch,batch_size):
+
+    NUMBER_OF_ENTRIES = arr.num_entries
+    for i in range(0,NUMBER_OF_ENTRIES//batch_size):
+        yield arr.array(entry_start=i*batch_size,entry_stop=(i+1)*batch_size,library="np")
+
+
+def show_stats(analysis_dict:dict,index:int):
+
+    tmp = ""
+    tmp += "Total Entities : {} \n".format(analysis_dict["total_points"])
+    tmp += "Mean : {0:10.3f} \n".format(analysis_dict["mean"][index])
+    tmp += "Std : {0:10.3f} \n".format(analysis_dict["std"][index])
+    tmp += "Variance : {0:10.3f}\n".format(analysis_dict["variance"][index])
+    tmp += "Min : {0:10.3f}\n".format(analysis_dict["min"][index])
+    tmp += "Max : {0:10.3f}\n".format(analysis_dict["max"][index])
+    return tmp
+
+def analyze_dataset(entry_directory,histogram_bins = 100,batch_size = 1000):
 
     NUMBER_OF_ENTRIES = entry_directory.num_entries
-    MAX = np.array(4*[-float("inf")])
-    MIN = np.array(4*[float("inf")])
+    MAX = np.array(4*[-float("inf")],dtype=np.float64)
+    MIN = np.array(4*[float("inf")],dtype=np.float64)
 
-    MEAN = np.zeros((4,1))
+    MEAN = np.zeros((4,1),dtype=np.float64)
     TOTAL_PARTICLES = 0
     # In first iteration mean value , max and min values are going to be calculated.
 
     for ind,(x_batch,y_batch,z_batch,e_batch) in tqdm(enumerate(zip(
-            entry_directory["hit_x"].iterate(step_size=step_size,library="np"),
-            entry_directory["hit_y"].iterate(step_size=step_size,library="np"),
-            entry_directory["hit_z"].iterate(step_size=step_size,library="np"),
-            entry_directory["hit_e"].iterate(step_size=step_size,library="np"),
+            iterate_array(entry_directory["hit_x"],batch_size=batch_size),
+            iterate_array(entry_directory["hit_y"],batch_size=batch_size),
+            iterate_array(entry_directory["hit_z"],batch_size=batch_size),
+            iterate_array(entry_directory["hit_e"],batch_size=batch_size)
     ))):
-
-        x_batch = x_batch["hit_x"]
-        y_batch = y_batch["hit_y"]
-        z_batch = z_batch["hit_z"]
-        e_batch = e_batch["hit_e"]
 
 
         for x,y,z,e in zip(x_batch,y_batch,z_batch,e_batch):
@@ -67,17 +96,22 @@ def analyze_dataset(entry_directory,histogram_bins = 100,step_size = 128):
                 ]
                 TOTAL_PARTICLES += len(x)
 
+        del x_batch
+        del y_batch
+        del z_batch
+        del e_batch
+
 
     MEAN /= NUMBER_OF_ENTRIES
 
-    get_x_hist = lambda data : np.histogram(data,bins=histogram_bins,range=(MIN[0],MAX[0]))[0]
-    get_y_hist = lambda data : np.histogram(data,bins=histogram_bins,range=(MIN[1],MAX[1]))[0]
-    get_z_hist = lambda data : np.histogram(data,bins=histogram_bins,range=(MIN[2],MAX[2]))[0]
-    get_e_hist = lambda data : np.histogram(data,bins=histogram_bins,range=(MIN[3],MAX[3]))[0]
+    get_x_hist = lambda data : np.histogram(data,bins=histogram_bins,range=(MIN[0],MAX[0]))[0].reshape(histogram_bins,1)
+    get_y_hist = lambda data : np.histogram(data,bins=histogram_bins,range=(MIN[1],MAX[1]))[0].reshape(histogram_bins,1)
+    get_z_hist = lambda data : np.histogram(data,bins=histogram_bins,range=(MIN[2],MAX[2]))[0].reshape(histogram_bins,1)
+    get_e_hist = lambda data : np.histogram(data,bins=histogram_bins,range=(MIN[3],MAX[3]))[0].reshape(histogram_bins,1)
 
-    hists = np.array(4 * [np.zeros(histogram_bins)])
+    hists = np.array(4 * [np.zeros((histogram_bins,1))],dtype=np.int64)
 
-    VARIANCE = np.array(4*[.0])
+    VARIANCE = np.array(4*[.0],dtype=np.float64)
 
     for ind,(x_batch,y_batch,z_batch,e_batch) in tqdm(enumerate(zip(
             entry_directory["hit_x"].iterate(step_size=step_size,library="np"),
@@ -109,11 +143,63 @@ def analyze_dataset(entry_directory,histogram_bins = 100,step_size = 128):
     VARIANCE /=60000
     STD = VARIANCE**.5
 
+    return {
+        "mean":MEAN,
+        "histogram":hists,
+        "variance" : VARIANCE,
+        "std":STD,
+        "max":MAX,
+        "min":MIN,
+        "total_points":TOTAL_PARTICLES
+    }
+
+def plot_analysis(analysis_dict:dict,GeV:int,root_dir):
+
+    fig = plt.figure(constrained_layout = True,dpi=100)
+    fig.set_size_inches(20,40)
+
+    grid_spec = fig.add_gridspec(4,2)
+
+    fig.suptitle("{} GeV Particle Stats".format(GeV),fontsize=72)
+
+    for ind,feature in enumerate(FEATURES):
+
+        plot_axes = fig.add_subplot(grid_spec[ind,0])
+        stats_axes = fig.add_subplot(grid_spec[ind,1])
+
+        hist = analysis_dict["histogram"][ind]
+        plot_axes.bar(
+            np.linspace(
+                analysis_dict["min"][ind],
+                analysis_dict["max"][ind],
+                len(hist)
+            ).astype(np.int32),
+            hist,
+            width= 10
+        )
+        plot_axes.set_title(feature, fontsize=64)
+        plot_axes.set_xlabel(UNIT_OF_MEASURES[ind],fontsize=40)
+        plot_axes.set_ylabel("# Particles",fontsize=40)
+
+        stats_axes.set_title("{} Stats".format(feature), fontsize=48)
+        stats_axes.grid(False)
+        stats_axes.axes.xaxis.set_ticks([])
+        stats_axes.axes.yaxis.set_ticks([])
+        stats_axes.text(0.1, 0.5, show_stats(analysis_dict,ind), clip_on=True, fontsize=32)
+
+    plt.savefig(os.path.join(root_dir,"{}GeV_particle_stats.png".format(GeV)))
+    plt.close(fig)
+
 
 def main():
 
-    for GeV in DATASETS.keys():
+    PLOTS_PATH = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)),
+        "..","..","plots"
+    )
 
+
+    for GeV in reversed(DATASETS.keys()):
 
 
         for dataset in DATASETS[GeV]:
@@ -125,4 +211,5 @@ def main():
             with uproot.open(dataset_path) as root:
 
                 entry_directory = entry_strat(root)
-                analyze_dataset(entry_directory)
+                analysis_dict = analyze_dataset(entry_directory)
+                plot_analysis(analysis_dict,GeV,PLOTS_PATH)
