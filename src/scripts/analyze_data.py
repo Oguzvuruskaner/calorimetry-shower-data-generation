@@ -116,10 +116,6 @@ def analyze_dataset(entry_directory,histogram_bins = 100,batch_size = 1000):
             iterate_array(entry_directory["hit_e"],batch_size=batch_size)
     ))):
 
-        x_batch = x_batch["hit_x"]
-        y_batch = y_batch["hit_y"]
-        z_batch = z_batch["hit_z"]
-        e_batch = e_batch["hit_e"]
 
 
         for x,y,z,e in zip(x_batch,y_batch,z_batch,e_batch):
