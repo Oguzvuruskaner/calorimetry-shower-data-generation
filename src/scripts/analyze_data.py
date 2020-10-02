@@ -20,11 +20,11 @@ UNIT_OF_MEASURES = [
     "GeV"
 ]
 
-def iterate_array(arr:uproot.TBranch,batch_size):
+def iterate_array(arr,batch_size):
 
     NUMBER_OF_ENTRIES = arr.num_entries
     for i in range(0,NUMBER_OF_ENTRIES//batch_size):
-        yield arr.array(entry_start=i*batch_size,entry_stop=(i+1)*batch_size,library="np")
+        yield arr.array(entry_start=i*batch_size,entry_stop=(i+1)*batch_size,library="np",array_cache=None)
 
 
 def show_stats(analysis_dict:dict,index:int):
@@ -96,10 +96,6 @@ def analyze_dataset(entry_directory,histogram_bins = 100,batch_size = 1000):
                 ]
                 TOTAL_PARTICLES += len(x)
 
-        del x_batch
-        del y_batch
-        del z_batch
-        del e_batch
 
 
     MEAN /= NUMBER_OF_ENTRIES
@@ -114,10 +110,10 @@ def analyze_dataset(entry_directory,histogram_bins = 100,batch_size = 1000):
     VARIANCE = np.array(4*[.0],dtype=np.float64)
 
     for ind,(x_batch,y_batch,z_batch,e_batch) in tqdm(enumerate(zip(
-            entry_directory["hit_x"].iterate(step_size=step_size,library="np"),
-            entry_directory["hit_y"].iterate(step_size=step_size,library="np"),
-            entry_directory["hit_z"].iterate(step_size=step_size,library="np"),
-            entry_directory["hit_e"].iterate(step_size=step_size,library="np"),
+            iterate_array(entry_directory["hit_x"],batch_size=batch_size),
+            iterate_array(entry_directory["hit_y"],batch_size=batch_size),
+            iterate_array(entry_directory["hit_z"],batch_size=batch_size),
+            iterate_array(entry_directory["hit_e"],batch_size=batch_size)
     ))):
 
         x_batch = x_batch["hit_x"]
