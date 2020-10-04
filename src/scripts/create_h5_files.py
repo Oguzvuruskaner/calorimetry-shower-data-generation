@@ -18,39 +18,31 @@ MATRIX_DATASET_FOLDER = os.path.join(DATA_FOLDER, "matrix_dataset")
 TENSOR_DATASET_FOLDER = os.path.join(DATA_FOLDER, "tensor_dataset")
 
 
-def open_h5_files(number_of_matrix_files,number_of_tensor_files) -> (list,list):
+def open_h5_files() -> (list,list):
 
-    matrix_files = []
-    tensor_files = []
 
     float_atom = tables.Float32Atom()
     int_atom = tables.Int32Atom()
 
-    for ind in range(number_of_matrix_files):
+    fd_m = tables.open_file(os.path.join(MATRIX_DATASET_FOLDER, "all.h5"), mode="w")
+    data_m =fd_m.create_earray(fd_m.root, "data", float_atom, (0, MATRIX_DIMENSION, MATRIX_DIMENSION),
+                       expectedrows=600000)
+    label_m = fd_m.create_earray(fd_m.root, "labels", int_atom, (0, 1), expectedrows=600000)
 
-        x_fd = tables.open_file(os.path.join(MATRIX_DATASET_FOLDER,"{}_x.h5".format(ind)),mode="w")
-        y_fd = tables.open_file(os.path.join(MATRIX_DATASET_FOLDER,"{}_y.h5".format(ind)),mode="w")
-        x_fd.create_earray(x_fd.root,"data_{}".format(ind),float_atom,(0,MATRIX_DIMENSION,MATRIX_DIMENSION),expectedrows=60000)
-        y_fd.create_earray(y_fd.root,"labels_{}".format(ind),int_atom,(0,1),expectedrows=60000)
+    fd_t = tables.open_file(os.path.join(TENSOR_DATASET_FOLDER, "all.h5"), mode="w")
 
-        matrix_files.append((x_fd,y_fd))
+    data_t = fd_t.create_earray(fd_t.root,"data",float_atom,(0,TENSOR_DIMENSION,TENSOR_DIMENSION,
+                                                             TENSOR_DIMENSION),expectedrows=300000)
+    label_t = fd_t.create_earray(fd_t.root,"labels",int_atom,(0,1),expectedrows=300000)
 
-    for ind in range(number_of_tensor_files):
 
-        x_fd = tables.open_file(os.path.join(TENSOR_DATASET_FOLDER,"{}_x.h5".format(ind)),mode="w")
-        y_fd = tables.open_file(os.path.join(TENSOR_DATASET_FOLDER,"{}_y.h5".format(ind)),mode="w")
-        x_array = x_fd.create_earray(x_fd.root,"data_{}".format(ind),float_atom,(0,TENSOR_DIMENSION,TENSOR_DIMENSION,TENSOR_DIMENSION),expectedrows=30000)
-        y_array = y_fd.create_earray(y_fd.root,"labels_{}".format(ind),int_atom,(0,1),expectedrows=30000)
+    return (fd_m,data_m,label_m),(fd_t,data_t,label_t)
 
-        tensor_files.append(((x_fd,x_array),(y_fd,y_array)))
-
-    return matrix_files,tensor_files
-
-def create_h5_files(number_of_matrix_files=10,number_of_tensor_files=20,batch_size = 1000):
+def create_h5_files(batch_size = 1000):
 
 
 
-    matrix_files,tensor_files = open_h5_files(number_of_matrix_files,number_of_tensor_files)
+    (fd_m,data_m,label_m),(fd_t,data_t,label_t) = open_h5_files()
 
 
 
@@ -100,27 +92,20 @@ def create_h5_files(number_of_matrix_files=10,number_of_tensor_files=20,batch_si
                                                  range=np.array([[0, 1], [0, 1]]),
                                                  weights=matrix_view[:, 2])[0]
 
-                        (_,x_array),(_,y_array) = choice(matrix_files)
-                        x_array.append(hist_2d.reshape(1,MATRIX_DIMENSION,MATRIX_DIMENSION))
-                        y_array.append(gev_array)
+                        data_m.append(hist_2d.reshape((1,MATRIX_DIMENSION,MATRIX_DIMENSION)))
+                        label_m.append(gev_array)
 
                         hist_3d = np.histogramdd(tensor_view[:, :3],
                                                  bins=TENSOR_DIMENSION,
                                                  range=np.array([[0, 1], [0, 1], [0, 1]]),
                                                  weights=tensor_view[:, 3])[0]
 
-                        (_, x_array), (_, y_array) = choice(tensor_files)
-                        x_array.append(hist_3d.reshape(1,TENSOR_DIMENSION,TENSOR_DIMENSION,TENSOR_DIMENSION))
-                        y_array.append(gev_array)
+                        data_t.append(hist_3d.reshape((1,TENSOR_DIMENSION,TENSOR_DIMENSION,TENSOR_DIMENSION)))
+                        label_t.append(gev_array)
 
 
 
 
-    for ((x_fd,_),(y_fd,_)) in matrix_files:
-        x_fd.close()
-        y_fd.close()
-
-    for ((x_fd,_),(y_fd,_)) in tensor_files:
-        x_fd.close()
-        y_fd.close()
+    fd_m.close()
+    fd_t.close()
 
