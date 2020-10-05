@@ -11,7 +11,7 @@ import os
 from src.config import *
 
 
-from src.utils import iterate_array
+from src.utils import iterate_array, bernoulli
 
 DATA_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "data")
 MATRIX_DATASET_FOLDER = os.path.join(DATA_FOLDER, "matrix_dataset")
@@ -32,17 +32,30 @@ def open_h5_files() -> (list,list):
     fd_t = tables.open_file(os.path.join(TENSOR_DATASET_FOLDER, "all.h5"), mode="w")
 
     data_t = fd_t.create_earray(fd_t.root,"data",float_atom,(0,TENSOR_DIMENSION,TENSOR_DIMENSION,
-                                                             TENSOR_DIMENSION),expectedrows=300000)
-    label_t = fd_t.create_earray(fd_t.root,"labels",int_atom,(0,1),expectedrows=300000)
+                                                             TENSOR_DIMENSION),expectedrows=600000)
+    label_t = fd_t.create_earray(fd_t.root,"labels",int_atom,(0,1),expectedrows=600000)
 
+    fd_m_test = tables.open_file(os.path.join(MATRIX_DATASET_FOLDER, "all_test.h5"), mode="w")
+    data_m_test = fd_m.create_earray(fd_m_test.root, "data", float_atom, (0, MATRIX_DIMENSION, MATRIX_DIMENSION),
+                                expectedrows=60000)
+    label_m_test = fd_m.create_earray(fd_m_test.root, "labels", int_atom, (0, 1), expectedrows=60000)
 
-    return (fd_m,data_m,label_m),(fd_t,data_t,label_t)
+    fd_t_test = tables.open_file(os.path.join(TENSOR_DATASET_FOLDER, "all_test.h5"), mode="w")
+    data_t_test = fd_m.create_earray(fd_t_test.root, "data", float_atom, (0, TENSOR_DIMENSION, TENSOR_DIMENSION,TENSOR_DIMENSION),
+                                     expectedrows=60000)
+    label_t_test = fd_m.create_earray(fd_t_test.root, "labels", int_atom, (0, 1), expectedrows=60000)
+
+    return (fd_m,data_m,label_m),\
+       (fd_t,data_t,label_t),\
+       (fd_m_test,data_m_test,label_m_test),\
+       (fd_t_test,data_t_test,label_t_test)
 
 def create_h5_files(batch_size = 1000):
 
 
 
-    (fd_m,data_m,label_m),(fd_t,data_t,label_t) = open_h5_files()
+    (fd_m,data_m,label_m),(fd_t,data_t,label_t),(fd_m_test,data_m_test,label_m_test),\
+       (fd_t_test,data_t_test,label_t_test) = open_h5_files()
 
 
 
@@ -72,7 +85,7 @@ def create_h5_files(batch_size = 1000):
                         hit_y = (hit_y-HIT_Y_MIN) / (HIT_Y_MAX-HIT_Y_MIN)
                         hit_z = (hit_z-HIT_Z_MIN) / (HIT_Z_MAX-HIT_Z_MIN)
                         hit_e /= GeV
-                        hit_r = (hit_x*hit_x + hit_y*hit_y)**.5
+                        hit_r = (hit_x*hit_x + hit_y*hit_y)**.5/HIT_R_MAX
 
                         matrix_view = np.hstack([
                             hit_r.reshape(-1,1),
@@ -91,21 +104,29 @@ def create_h5_files(batch_size = 1000):
                                                  bins=MATRIX_DIMENSION,
                                                  range=np.array([[0, 1], [0, 1]]),
                                                  weights=matrix_view[:, 2])[0]
-
-                        data_m.append(hist_2d.reshape((1,MATRIX_DIMENSION,MATRIX_DIMENSION)))
-                        label_m.append(gev_array)
+                        if bernoulli(0.9):
+                            data_m.append(hist_2d.reshape((1,MATRIX_DIMENSION,MATRIX_DIMENSION)))
+                            label_m.append(gev_array)
+                        else:
+                            data_m_test.append(hist_2d.reshape((1, MATRIX_DIMENSION, MATRIX_DIMENSION)))
+                            label_m_test.append(gev_array)
 
                         hist_3d = np.histogramdd(tensor_view[:, :3],
                                                  bins=TENSOR_DIMENSION,
                                                  range=np.array([[0, 1], [0, 1], [0, 1]]),
                                                  weights=tensor_view[:, 3])[0]
 
-                        data_t.append(hist_3d.reshape((1,TENSOR_DIMENSION,TENSOR_DIMENSION,TENSOR_DIMENSION)))
-                        label_t.append(gev_array)
+                        if bernoulli(0.9):
+                            data_t.append(hist_3d.reshape((1, TENSOR_DIMENSION, TENSOR_DIMENSION,TENSOR_DIMENSION)))
+                            label_t.append(gev_array)
+                        else:
+                            data_t_test.append(hist_3d.reshape((1, TENSOR_DIMENSION, TENSOR_DIMENSION,TENSOR_DIMENSION)))
+                            label_t_test.append(gev_array)
 
 
 
 
     fd_m.close()
     fd_t.close()
-
+    fd_t_test.close()
+    fd_m_test.close()
