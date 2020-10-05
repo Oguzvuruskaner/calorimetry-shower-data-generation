@@ -1,5 +1,3 @@
-from random import choice
-
 import uproot4 as uproot
 from tqdm import  tqdm
 
@@ -23,13 +21,14 @@ def create_particle_dataset(batch_size = 1000):
     int_atom = tables.Int32Atom()
 
     fd = tables.open_file(os.path.join(PARTICLE_DATASET_FOLDER, "all.h5"), mode="w")
-    data = fd.create_earray(fd.root, "data", float_atom, (0, 0, 4), expectedrows=600000)
-    labels = fd.create_earray(fd.root, "data", int_atom, (0, 1), expectedrows=600000)
+    data = fd.create_vlarray(fd.root, "data", float_atom,  expectedrows=600000)
+    labels = fd.create_earray(fd.root, "labels", int_atom, (0, 1), expectedrows=600000)
 
     fd_test = tables.open_file(os.path.join(PARTICLE_DATASET_FOLDER, "all_test.h5"), mode="w")
-    data_test = fd_test.create_earray(fd_test.root, "data", float_atom, (0, 0, 4),
+    data_test = fd_test.create_vlarray(fd_test.root, "data", float_atom,
                                      expectedrows=600000)
     label_test = fd_test.create_earray(fd_test.root, "labels", int_atom, (0, 1), expectedrows=600000)
+
 
     for GeV in DATASETS.keys():
         gev_array = np.array([GeV]).reshape(1,1)
@@ -61,10 +60,10 @@ def create_particle_dataset(batch_size = 1000):
                         particles = np.hstack([hit_x,hit_y,hit_z,hit_e])
 
                         if bernoulli(0.9):
-                            data.append(particles.reshape((1,-1,4)))
+                            data.append(particles.reshape((-1,)))
                             labels.append(gev_array)
                         else:
-                            data_test.append(particles.reshape((1,-1,4)))
+                            data_test.append(particles.reshape((-1,)))
                             label_test.append(gev_array)
 
 
