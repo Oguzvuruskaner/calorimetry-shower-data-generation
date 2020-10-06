@@ -15,6 +15,7 @@ DATA_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", ".
 PARTICLE_DATASET_FOLDER = os.path.join(DATA_FOLDER, "particle_dataset")
 
 
+
 def create_particle_dataset(batch_size = 1000):
 
     float_atom = tables.Float32Atom()
@@ -52,12 +53,22 @@ def create_particle_dataset(batch_size = 1000):
 
                     for hit_x,hit_y,hit_z,hit_e in zip(x_batch,y_batch,z_batch,e_batch):
 
-                        hit_x = (hit_x-HIT_X_MIN) / (HIT_X_MAX-HIT_X_MIN)
-                        hit_y = (hit_y-HIT_Y_MIN) / (HIT_Y_MAX-HIT_Y_MIN)
-                        hit_z = (hit_z-HIT_Z_MIN) / (HIT_Z_MAX-HIT_Z_MIN)
+
+                        hit_x = hit_x[hit_e != 0]
+                        hit_y = hit_y[hit_e != 0]
+                        hit_z = hit_z[hit_e != 0]
+                        hit_e = hit_e[hit_e != 0]
+
+                        hit_x = (hit_x-HIT_X_MIN) / (HIT_X_MAX-HIT_X_MIN) * 2 -1
+                        hit_y = (hit_y-HIT_Y_MIN) / (HIT_Y_MAX-HIT_Y_MIN) * 2 -1
+                        hit_z = (hit_z-HIT_Z_MIN) / (HIT_Z_MAX-HIT_Z_MIN) * 2 -1
                         hit_e /= GeV
 
-                        particles = np.hstack([hit_x,hit_y,hit_z,hit_e])
+                        particles = np.stack([hit_x,hit_y,hit_z,hit_e],axis=1)
+                        #Sorting of particles.
+                        particles = particles[np.argsort(np.sum(particles**2,axis=1))]
+
+
 
                         if bernoulli(0.9):
                             data.append(particles.reshape((-1,)))
