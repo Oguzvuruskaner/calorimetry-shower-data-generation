@@ -9,7 +9,7 @@ from src.layers.AttrProxy import AttrProxy
 
 class EvaluationNetwork(N.Module):
 
-    def __init__(self,number_of_labels, state_size=STATE_SIZE, depth=12,dropout_rate=0.4):
+    def __init__(self,number_of_labels, state_size=STATE_SIZE, depth=24,dropout_rate=0.4):
 
         super().__init__()
 
@@ -47,21 +47,15 @@ class EvaluationNetwork(N.Module):
             )
         )
 
-        self.inference_state = {
-            "label":None
-        }
-
     def decay_dropout_rate(self,alpha):
         self.dropout_rate = self.dropout_rate * alpha
         if self.dropout_rate < 0.01:
             self.dropout_rate = 0
 
-    def set_label(self,label:int):
-        self.inference_state["label"] = label
 
-    def forward(self,state):
+    def forward(self,state,label):
 
-        one_hot_vector = self.embedding(self.inference_state["label"]).view(1,-1)
+        one_hot_vector = self.embedding(label).view(-1,self.number_of_labels)
         x = self.l["inp"](torch.cat([state,one_hot_vector],dim=1))
 
         for ind in range(self.depth):

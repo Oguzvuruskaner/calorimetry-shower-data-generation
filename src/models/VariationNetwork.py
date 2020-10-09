@@ -9,7 +9,7 @@ from src.layers.AttrProxy import AttrProxy
 
 class VariationNetwork(N.Module):
 
-    def __init__(self,input_size,number_of_labels, state_size=STATE_SIZE, depth=18):
+    def __init__(self,input_size,number_of_labels, state_size=STATE_SIZE, depth=24):
 
         super().__init__()
 
@@ -45,17 +45,9 @@ class VariationNetwork(N.Module):
             )
         )
 
+    def forward(self,x,label):
 
-        self.inference_state = {
-            "label":None
-        }
-
-    def set_label(self,label:int):
-        self.inference_state["label"] = label
-
-    def forward(self,x):
-
-        one_hot_vector = self.embedding(self.inference_state["label"]).view(1,-1)
+        one_hot_vector = self.embedding(label).view(-1,self.number_of_labels)
         x = self.proxy["inp"](torch.cat([x,one_hot_vector],dim=1))
 
         for ind in range(self.depth):
