@@ -66,7 +66,7 @@ def create_particle_dataset(batch_size = 1000):
 
                         particles = np.stack([hit_x,hit_y,hit_z,hit_e],axis=1)
                         #Sorting of particles.
-                        particles = particles[np.argsort(np.sum(particles[,:3]**2,axis=1))]
+                        particles = particles[np.argsort(np.sum(particles[:,:3]**2,axis=1))]
 
 
 
