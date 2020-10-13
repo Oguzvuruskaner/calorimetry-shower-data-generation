@@ -132,22 +132,24 @@ def relaxed_main():
                     current_state += state.detach().sum(dim=0)
 
                     fake_result = net_eval(state,label)
-                    fake_result.backward(torch.Tensor([0]).view(1,1).to(GPU_DEVICE))
+                    fake_result.backward()
 
 
                     result = net_eval(current_state,label)
-                    result.backward(torch.Tensor([0]).view(1,1).to(GPU_DEVICE))
+                    result.backward()
 
                 for param in net_var.parameters():
                     if param.requires_grad:
                         param.grad /= 2*length_of_jet
 
+
+                print(current_state.sum())
                 eval_opt.step()
-                result = -(net_eval(current_state,label)) + STATE_DECAY * current_state.detach().sum()
+                result = -(net_eval(current_state,label))
                 complete_train_results += int(result)
                 result.backward()
                 input_grad = [i.grad for i in net_eval.parameters()][0]
-
+                input_grad /= input_grad.norm()
 
                 for particles in jet:
 
