@@ -21,8 +21,9 @@ class VariationNetwork(N.Module):
         self.proxy = AttrProxy(self,"l_")
 
         self.add_module(self.proxy("inp"), N.Sequential(
-            spectral_norm(N.Linear(self.input_size + self.number_of_labels, self.state_size)),
-            N.SELU()
+            N.Linear(self.input_size + self.number_of_labels, self.state_size),
+            N.LeakyReLU(inplace=True),
+            N.LayerNorm(self.state_size)
         ))
 
         self.embedding = N.Embedding(self.number_of_labels, self.number_of_labels)
@@ -33,14 +34,15 @@ class VariationNetwork(N.Module):
             self.add_module(
                 self.proxy("{}".format(i)),
                 N.Sequential(
-                    spectral_norm(N.Linear(self.state_size, self.state_size)),
-                    N.SELU()
+                    N.Linear(self.state_size, self.state_size),
+                    N.LeakyReLU(inplace=True),
+                    N.LayerNorm(self.state_size)
                 )
             )
 
         self.add_module(self.proxy("out"),
             N.Sequential(
-                spectral_norm(N.Linear(self.state_size, self.state_size)),
+                N.Linear(self.state_size, self.state_size),
                 N.ReLU()
             )
         )

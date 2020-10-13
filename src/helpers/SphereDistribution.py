@@ -12,7 +12,7 @@ class SphereDistribution():
 
         def wrapper(size = 1):
 
-            sample = np.random.uniform(-radius,radius,(self.n_sphere,size))
+            sample = np.random.uniform(-radius,radius,(size,self.n_sphere))
             return sample / (np.sum(sample**2))**.5
 
         return wrapper
