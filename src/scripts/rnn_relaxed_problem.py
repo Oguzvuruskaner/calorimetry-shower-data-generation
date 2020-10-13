@@ -102,7 +102,7 @@ def relaxed_main():
     var_opt = O.Adam(net_var.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY)
     var_scheduler = O.lr_scheduler.ExponentialLR(var_opt, gamma=0.98)
 
-    eval_opt = O.Adam(net_var.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY)
+    eval_opt = O.Adam(net_eval.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY)
     eval_scheduler = O.lr_scheduler.ExponentialLR(eval_opt, gamma=0.95)
 
     writer = SummaryWriter(LOG_DIR)
@@ -112,8 +112,6 @@ def relaxed_main():
         complete_train_results = 0
         complete_variational_results = 0
 
-        eval_opt.zero_grad()
-        var_opt.zero_grad()
 
         for step in range(STEPS_PER_EPOCH):
             for batch in range(BATCH_SIZE):
@@ -124,7 +122,8 @@ def relaxed_main():
                 label = torch.Tensor([0]).long().to(GPU_DEVICE)
 
                 current_state = torch.zeros((1,STATE_SIZE),requires_grad=True).to(GPU_DEVICE)
-
+                eval_opt.zero_grad()
+                var_opt.zero_grad()
 
                 for ind,particles in enumerate(jet):
 
@@ -135,21 +134,16 @@ def relaxed_main():
                     fake_result.backward()
 
 
-                    result = net_eval(current_state,label)
-                    result.backward()
-
                 for param in net_var.parameters():
                     if param.requires_grad:
                         param.grad /= 2*length_of_jet
 
 
-                print(current_state.sum())
                 eval_opt.step()
                 result = -(net_eval(current_state,label))
                 complete_train_results += int(result)
                 result.backward()
                 input_grad = [i.grad for i in net_eval.parameters()][0]
-                input_grad /= input_grad.norm()
 
                 for particles in jet:
 
