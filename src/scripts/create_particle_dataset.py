@@ -9,19 +9,18 @@ import os
 from src.config import *
 
 
-from src.utils import iterate_array, bernoulli
+from src.utils import iterate_array, bernoulli, create_or_cleanup
 
 DATA_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "data")
 PARTICLE_DATASET_FOLDER = os.path.join(DATA_FOLDER, "particle_dataset")
 
 
-
-def create_particle_dataset(batch_size = 1000):
+def create_particle_dataset(datasets : dict = DATASETS,folder_path = PARTICLE_DATASET_FOLDER,batch_size = 1000):
 
     float_atom = tables.Float32Atom()
     int_atom = tables.Int32Atom()
 
-    fd = tables.open_file(os.path.join(PARTICLE_DATASET_FOLDER, "all.h5"), mode="w")
+    fd = tables.open_file(os.path.join(folder_path, "all.h5"), mode="w")
     data = fd.create_vlarray(fd.root, "data", float_atom,  expectedrows=600000)
     labels = fd.create_earray(fd.root, "labels", int_atom, (0, 1), expectedrows=600000)
 
@@ -31,18 +30,19 @@ def create_particle_dataset(batch_size = 1000):
     label_test = fd_test.create_earray(fd_test.root, "labels", int_atom, (0, 1), expectedrows=600000)
 
 
-    for GeV in DATASETS.keys():
+    for GeV in datasets.keys():
         gev_array = np.array([GeV]).reshape(1,1)
 
-        for dataset in DATASETS[GeV]:
+        for dataset in datasets[GeV]:
 
             entry_strat = dataset.get("entries",None) or entries
             dataset_path = dataset["path"]
 
             with uproot.open(dataset_path) as root:
 
-
                 entry_directory = entry_strat(root)
+
+
 
                 for ind, (x_batch, y_batch, z_batch, e_batch) in tqdm(enumerate(zip(
                         iterate_array(entry_directory["hit_x"], batch_size=batch_size),
@@ -65,7 +65,8 @@ def create_particle_dataset(batch_size = 1000):
                         hit_e /= GeV
 
                         particles = np.stack([hit_x,hit_y,hit_z,hit_e],axis=1)
-                        #Sorting of particles.
+                        # Sorting particles in increasing order with respect
+                        # to scalar value of their euclidean distance to the point (0,0,0).
                         particles = particles[np.argsort(np.sum(particles[:,:3]**2,axis=1))]
 
 
@@ -82,3 +83,12 @@ def create_particle_dataset(batch_size = 1000):
 
     fd.close()
     fd_test.close()
+
+
+def create_particles_via_labels():
+
+    for GeV in DATASETS.keys():
+        folder_path = os.path.join(PARTICLE_DATASET_FOLDER,str(GeV))
+        create_or_cleanup(folder_path)
+
+        create_particle_dataset(folder_path=folder_path,datasets={GeV:DATASETS[GeV]})
