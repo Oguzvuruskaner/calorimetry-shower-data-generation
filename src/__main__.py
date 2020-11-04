@@ -33,12 +33,12 @@ if __name__ == "__main__":
 
     generator = Generator(MATRIX_DIMENSION).apply(generator_init).to(GPU_DEVICE)
     critic = Critic(MATRIX_DIMENSION).apply(critic_init).to(GPU_DEVICE)
-    for basename in os.listdir("train_logs"):
-        os.unlink(os.path.join("train_logs",basename))
+    for basename in os.listdir("../logs/train_logs"):
+        os.unlink(os.path.join("../logs/train_logs", basename))
 
     RESULTS_ROOT_DIR = os.path.join("..","results","training_{}".format(MODEL_VERSION))
     MODELS_ROOT_DIR = os.path.join("..","models","training_{}".format(MODEL_VERSION))
-    TRAIN_LOGS_DIR = os.path.join("train_logs")
+    TRAIN_LOGS_DIR = os.path.join("../logs/train_logs")
 
     create_or_cleanup(RESULTS_ROOT_DIR)
     create_or_cleanup(MODELS_ROOT_DIR)

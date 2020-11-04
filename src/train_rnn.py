@@ -41,7 +41,7 @@ if __name__ == "__main__":
     train_dataset = JetDataset(os.path.join("..","data","particle_dataset",str(TRAIN_LABEL),"all.h5"))
 
     RESULTS_DIR = os.path.join("..", "results", "sequential_training_{}".format(MODEL_VERSION))
-    LOG_DIR = os.path.join("rnn_logs","sequential_training_{}".format(MODEL_VERSION))
+    LOG_DIR = os.path.join("../logs/rnn_logs", "sequential_training_{}".format(MODEL_VERSION))
     MODELS_ROOT_DIR = os.path.join("..","models","sequential_training_{}".format(MODEL_VERSION))
     
     
