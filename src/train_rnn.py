@@ -127,13 +127,13 @@ if __name__ == "__main__":
         images = get_jet_images(generated_jets.numpy())
         fig = plot_multiple_images(images,4)
 
-        fig.savefig(os.path.join(RESULTS_DIR, "{}.png".format((epoch+1))*STEPS_PER_EPOCH))
+        fig.savefig(os.path.join(RESULTS_DIR, "{}.png".format((epoch+1)*STEPS_PER_EPOCH)))
         plt.close(fig)
 
         plot_func = lambda data,title,ax : plot_energy_graph(data,title,TRAIN_LABEL,ax=ax)
         #Only the energy values are needed AND t o, therefore,
         fig = plot_multiple_images(generated_jets[:,:,-2:-1].numpy(),4,plot_func=plot_func)
-        fig.savefig(os.path.join(RESULTS_DIR, "{}_energy.png".format((epoch+1))*STEPS_PER_EPOCH))
+        fig.savefig(os.path.join(RESULTS_DIR, "{}_energy.png".format((epoch+1)*STEPS_PER_EPOCH)))
         plt.close(fig)
 
         writer.add_scalar("Train Error", training_loss / STEPS_PER_EPOCH,
