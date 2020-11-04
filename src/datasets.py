@@ -42,10 +42,7 @@ DATASETS = {
     50: [
         {
             "path" : os.path.join(ROOT_FILES_DIR, "RezaAnalysis_50GeV.root")
-        },
-        {
-            "path" : os.path.join(ROOT_FILES_DIR, "GeantShowers50GeVpi10k.root"),
-            "entries" : lambda root : root[b"showers"]
         }
     ],
 }
+entries = lambda root : root["g4SimHits"]["eventTree"]

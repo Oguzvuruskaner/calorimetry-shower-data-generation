@@ -43,7 +43,14 @@ def plot_multiple_images(data,nrow : int):
     grid_spec = sup_figure.add_gridspec(nrow, ncolumn)
 
 
-    for i in range(nrow-1):
+
+    if remainder == 0:
+        iter_rows = nrow
+    else:
+        iter_rows = nrow - 1
+
+
+    for i in range(iter_rows):
         for j in range(ncolumn):
             ax = sup_figure.add_subplot(grid_spec[i, j])
             plot_data(data[i*ncolumn + j],counter,ax=ax)

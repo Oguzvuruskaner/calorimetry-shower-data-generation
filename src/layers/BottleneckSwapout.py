@@ -5,8 +5,8 @@ from src.layers.BottleneckLayer import BottleneckLayer
 
 class BottleneckSwapout(BottleneckLayer):
 
-    def __init__(self, in_channels,out_channels,f_x_survival_prob = 0.5,x_survival_prob = 0.5,relu=False):
-        super().__init__(in_channels,out_channels,relu = relu)
+    def __init__(self, in_channels,out_channels,f_x_survival_prob = 0.75,x_survival_prob = 0.75,relu=False,spectral=False):
+        super().__init__(in_channels,out_channels,relu = relu,spectral=spectral)
 
         self.f_x_dropout = N.Dropout(1-f_x_survival_prob)
         self.x_dropout = N.Dropout(1-x_survival_prob)

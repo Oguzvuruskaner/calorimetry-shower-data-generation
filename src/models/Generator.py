@@ -1,6 +1,7 @@
 import torch.nn as N
 
 from src.config import LATENT_SIZE, DEPTH_PARAMETER
+from src.layers.BottleneckLayer import BottleneckLayer
 from src.layers.BottleneckSwapout import BottleneckSwapout
 from src.layers.conv_blocks import ConvBlock,DeConvBlock
 

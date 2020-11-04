@@ -1,8 +1,9 @@
 import torch
 import torch.nn as N
 import os
+from random import random
 
-def create_or_cleanup(folder):
+def create_or_cleanup(folder) -> object:
     if os.path.exists(folder):
         for basename in os.listdir(folder):
             os.unlink(os.path.join(folder,basename))
@@ -44,4 +45,23 @@ def critic_init(m:N.Module):
 
 
 
+def decay_dropout_rate(model, decay=0.98):
+    for name, child in model.named_children():
+        if isinstance(child, torch.nn.Dropout):
+            if child.p < 0.01:
+                child.p = 0
+            else:
+                child.p = child.p * decay
+        decay_dropout_rate(child, decay=decay)
 
+
+def iterate_array(arr,batch_size):
+
+    NUMBER_OF_ENTRIES = arr.num_entries
+    for i in range(0,NUMBER_OF_ENTRIES//batch_size):
+        yield arr.array(entry_start=i*batch_size,entry_stop=(i+1)*batch_size,library="np",array_cache=None)
+
+
+
+def bernoulli(prob):
+    return prob > random()

@@ -1,10 +1,13 @@
 import torch
 import torch.nn as N
+from torch.nn.utils import spectral_norm
 
 from src.config import DEPTH_PARAMETER
+from src.layers.BottleneckLayer import BottleneckLayer
 from src.layers.BottleneckSwapout import BottleneckSwapout
 from src.layers.MinibatchDiscrimination import MinibatchDiscrimination
-from src.layers.conv_blocks import ConvBlock
+from src.layers.conv_blocks import ConvBlock, SpectralConvBlock
+
 
 class Critic(N.Module):
 
@@ -16,23 +19,23 @@ class Critic(N.Module):
         self._depth_parameter = depth_parameter
 
         self.conv1 = N.Sequential(
-            ConvBlock(1, 8),
-            ConvBlock(8, 16),
-            BottleneckSwapout(16, 16),
+            SpectralConvBlock(1, 8),
+            SpectralConvBlock(8, 16),
+            BottleneckLayer(16, 16,relu=False,spectral=True),
             ConvBlock(16,32),
-            BottleneckSwapout(32,32),
+            BottleneckLayer(32,32,relu=False,spectral=True),
         )
 
         self.conv2 = N.Sequential(
-            ConvBlock(32,64,5,2,2),
-            BottleneckSwapout(64, 64),
-            BottleneckSwapout(64, 64)
+            SpectralConvBlock(32,64,5,2,2),
+            BottleneckLayer(64, 64,relu=False,spectral=True),
+            BottleneckLayer(64, 64,relu=False,spectral=True)
         )
 
         self.conv3 = N.Sequential(
-            ConvBlock(64, 128,5, 2, 2),
-            BottleneckSwapout(128, 128),
-            BottleneckSwapout(128, 128),
+            SpectralConvBlock(64, 128,5, 2, 2),
+            BottleneckLayer(128, 128,relu=False,spectral=True),
+            BottleneckLayer(128, 128,relu=False,spectral=True),
             N.AdaptiveAvgPool2d((1,1)),
             N.Flatten()
         )
@@ -42,7 +45,7 @@ class Critic(N.Module):
         )
 
         self.output = N.Sequential(
-            N.Linear(64 + 128, 1),
+            spectral_norm(N.Linear(64 + 128, 1)),
             N.Tanh()
         )
 

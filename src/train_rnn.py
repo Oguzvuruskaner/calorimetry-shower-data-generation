@@ -3,167 +3,128 @@ from torch.utils.tensorboard import SummaryWriter
 from tqdm import trange
 
 from src.config import *
-from src.datasets import DATASETS
 from src.helpers.JetDataset import JetDataset
-from src.models.EvaluationNetwork import EvaluationNetwork
-from src.models.VariationNetwork import VariationNetwork
 import os
 
 import torch.nn as N
 import torch.optim as O
 import torch
 
-from src.utils import bernoulli, create_or_cleanup
-from math import log2
+from src.models.RNN import RNN
+from src.plots import  plot_multiple_images
+from src.utils import create_or_cleanup
 
+import matplotlib.pyplot as plt
 
-def variation_init(m:N.Module):
-    classname = m.__class__.__name__
-    if "Conv" in classname or "Linear" in classname:
-        N.init.kaiming_uniform_(m.weight.data)
-        N.init.constant_(m.bias.data, 0)
-
-
-def evaluation_init(m:N.Module):
-
-    classname = m.__class__.__name__
-    if "Conv" in classname or "Linear" in classname:
-        N.init.kaiming_uniform_(m.weight.data)
-        N.init.constant_(m.bias.data, 0)
 
 GPU_DEVICE = torch.device(torch.cuda.current_device())
 
+def gate_init(m:N.Module):
+    classname = m.__class__.__name__
+    if "Conv" in classname or "Linear" in classname:
+        N.init.kaiming_uniform_(m.weight.data)
+        N.init.zeros_(m.bias.data)
 
-def entropy_loss(information_prob):
 
-    def wrapper(output,correct):
-        return -log2(information_prob) * (output-correct)**2
+def network_init(m:N.Module):
+    classname = m.__class__.__name__
+    if "Conv" in classname or "Linear" in classname:
+        N.init.kaiming_normal_(m.weight.data)
+        N.init.zeros_(m.bias.data)
 
-    return wrapper
 
-def group_list(l,group_size):
-    for i in range(0, len(l), group_size):
-        yield l[i:i+group_size]
-
+MODEL_VERSION = 1
+TRAIN_LABEL = 1
 
 if __name__ == "__main__":
 
-    train_dataset = JetDataset(os.path.join("..","data","particle_dataset","all.h5"))
+    train_dataset = JetDataset(os.path.join("..","data","particle_dataset",str(TRAIN_LABEL),"all.h5"))
 
+    RESULTS_DIR = os.path.join("..", "results", "sequential_training_{}".format(MODEL_VERSION))
+    LOG_DIR = os.path.join("rnn_logs","sequential_training_{}".format(MODEL_VERSION))
+    MODELS_ROOT_DIR = os.path.join("..","models","sequential_training_{}".format(MODEL_VERSION))
+    
+    
+    HARD_STOP = 1000
 
-    MODEL_ROOT = os.path.join("..", "results", "particle_generator_training_{}".format(MODEL_VERSION))
-    LOG_DIR = os.path.join("rnn_logs","train_{}".format(MODEL_VERSION))
-
-
-    create_or_cleanup(MODEL_ROOT)
+    create_or_cleanup(RESULTS_DIR)
     create_or_cleanup(LOG_DIR)
+    create_or_cleanup(MODELS_ROOT_DIR)
     writer = SummaryWriter(LOG_DIR)
 
     get_jet = lambda : next(iter(DataLoader(train_dataset,shuffle=True,batch_size=1)))
 
-    number_of_labels = len(DATASETS.keys())
+    criterion = torch.nn.MSELoss()
 
-    gev_to_embed =  {}
+    model = RNN().to(GPU_DEVICE)
 
-    net_var = VariationNetwork(4,number_of_labels).apply(variation_init).to(GPU_DEVICE)
-    net_eval = EvaluationNetwork(number_of_labels).apply(evaluation_init).to(GPU_DEVICE)
-
-    var_opt = O.Adam(net_var.parameters(),lr=LEARNING_RATE,weight_decay=WEIGHT_DECAY)
-    var_scheduler = O.lr_scheduler.ExponentialLR(var_opt,gamma=0.98)
-
-    eval_opt = O.Adam(net_var.parameters(), lr=LEARNING_RATE*40, weight_decay=WEIGHT_DECAY)
-    eval_scheduler = O.lr_scheduler.ExponentialLR(eval_opt, gamma=0.95)
-
-    for ind,key in enumerate(DATASETS.keys()):
-        gev_to_embed[key] = ind
+    optim = O.ASGD(model.parameters(),lr=LEARNING_RATE)
+    lr_scheduler = O.lr_scheduler.ExponentialLR(optim,0.96)
 
 
     for epoch in trange(EPOCH):
 
-        complete_train_results = 0
-        complete_variational_results = 0
+        training_loss = 0
 
-        for step in range(STEPS_PER_EPOCH):
-            for batch in range(BATCH_SIZE):
+        for steps in range(STEPS_PER_EPOCH):
 
-                jet,GeV = get_jet()
-                jet = jet.view(-1,4).to(GPU_DEVICE)
-                length_of_jet = len(jet)
-                label = gev_to_embed[int(GeV)]
+            particles,_ = get_jet()
+            particles = particles.view(-1,4)
 
+            c = torch.zeros(STATE_SIZE).to(GPU_DEVICE)
+            h = torch.rand(STATE_SIZE).to(GPU_DEVICE)
 
-                fake_criterion = entropy_loss((length_of_jet-1)/length_of_jet)
-                real_criterion = entropy_loss(1/length_of_jet)
+            for particle in particles:
 
-                current_state = torch.zeros((1,STATE_SIZE),requires_grad=True).to(GPU_DEVICE)
-                labels_arr_1 = torch.Tensor(GROUP_SIZE*[label]).long().to(GPU_DEVICE)
-                labels_arr_2 = torch.Tensor((length_of_jet%GROUP_SIZE)*[label]).long().to(GPU_DEVICE)
+                out_particle,c,h = model(c.detach(),h.detach())
 
+                loss = criterion(out_particle,particle.to(GPU_DEVICE))
+                training_loss += loss.item()
 
-                for particles in group_list(jet,GROUP_SIZE):
-
-                    if len(particles) == GROUP_SIZE:
-                        labels = labels_arr_1
-                    else:
-                        labels = labels_arr_2
-
-                    state = net_var(particles.view(-1,4),labels)
-                    current_state += state.detach().sum(dim=0)
-
-                    result = net_eval(current_state,labels[0])
-                    result = fake_criterion(result,0)
-                    result.backward()
-
-                result = real_criterion(net_eval(current_state,labels[0]),1) + STATE_DECAY * current_state.sum()
-                complete_train_results += int(result)
-                result.backward()
-
-                input_grad = [i.grad for i in net_eval.parameters()][0]
-
-                for particles in group_list(jet,GROUP_SIZE):
-                    if len(particles) == GROUP_SIZE:
-                        labels = labels_arr_1
-                    else:
-                        labels = labels_arr_2
-
-                    state = net_var(particles.view(-1,4),labels)
-                    state = state.sum(dim=0).view(1,-1)
-                    state.backward(input_grad.view(1,-1))
-                    tmp = state.detach()*input_grad.detach().sum(dim=0)
-                    complete_variational_results += float(tmp.abs().sum())
+                loss.backward()
 
 
+            end_particle,_,_ = model(c.detach(),h.detach())
+            loss = criterion(end_particle,torch.zeros(4).to(GPU_DEVICE))
+            training_loss += loss.item()
 
-            for param in net_var.parameters():
-                if param.requires_grad:
-                    param.grad /= BATCH_SIZE
+            loss.backward()
+            optim.step()
 
-            eval_opt.step()
-            var_opt.step()
 
-        var_scheduler.step()
-        eval_scheduler.step()
-
-        writer.add_scalar("Complete Train Loss",complete_train_results/BATCH_SIZE/STEPS_PER_EPOCH,BATCH_SIZE*STEPS_PER_EPOCH*(epoch+1))
-        writer.add_scalar("Complete Variational Gradient L1",complete_variational_results/BATCH_SIZE/STEPS_PER_EPOCH,BATCH_SIZE*STEPS_PER_EPOCH*(epoch+1))
-
-        torch.save(
-            net_eval,
-            os.path.join("..","results","particle_generator_training_{}".format(MODEL_VERSION),"evaluator.tch")
-        )
-
-        torch.save(
-            net_var,
-            os.path.join("..", "results", "particle_generator_training_{}".format(MODEL_VERSION), "variational.tch")
-        )
+        lr_scheduler.step()
 
         if not epoch % CHECKPOINT_RATE:
-            torch.save(
-                net_eval,
-                os.path.join("..", "results", "particle_generator_training_{}".format(MODEL_VERSION), "evaluator_{}.tch".format(epoch))
-            )
-            torch.save(
-                net_var,
-                os.path.join("..", "results", "particle_generator_training_{}".format(MODEL_VERSION),
-                             "variational_{}.tch".format(epoch))
-            )
+            torch.save(model,os.path.join(MODELS_ROOT_DIR,"lstm_{}.pt".format(epoch)))
+
+        generated_jets = torch.zeros((TEST_IMAGES,HARD_STOP,3))
+
+
+        for jet_no in range(TEST_IMAGES):
+
+            c = torch.zeros(STATE_SIZE).to(GPU_DEVICE)
+            h = torch.rand(STATE_SIZE).to(GPU_DEVICE)
+
+            for ind in range(HARD_STOP):
+
+                particle,c,h = model(c.detach(),h.detach())
+
+                if particle.sum() != 0:
+                    generated_jets[jet_no, ind] = torch.FloatTensor([
+                            torch.sqrt(particle[0]*particle[0] + particle[1]*particle[1]),
+                            particle[2],
+                            particle[3]
+                     ])
+
+                else:
+                    break
+
+
+        fig = plot_multiple_images(generated_jets,4)
+        fig.savefig(os.path.join(RESULTS_DIR, "{}.png".format((epoch+1))*STEPS_PER_EPOCH))
+        plt.close(fig)
+
+
+        writer.add_scalar("Train Error", training_loss / STEPS_PER_EPOCH,
+                          (epoch+1) * STEPS_PER_EPOCH)
+        writer.add_scalar("Generated stats", train_results[epoch, 2] / STEPS_PER_EPOCH, epoch * STEPS_PER_EPOCH)
