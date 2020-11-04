@@ -4,3 +4,5 @@
 *.pkl
 *.png
 *.pdf
+.idea
+.ipynb_checkpoints
