@@ -14,7 +14,6 @@ from src.utils import iterate_array, bernoulli, create_or_cleanup
 DATA_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "data")
 PARTICLE_DATASET_FOLDER = os.path.join(DATA_FOLDER, "particle_dataset")
 
-
 def create_particle_dataset(datasets : dict = DATASETS,folder_path = PARTICLE_DATASET_FOLDER,batch_size = 1000):
 
     float_atom = tables.Float32Atom()
@@ -36,7 +35,7 @@ def create_particle_dataset(datasets : dict = DATASETS,folder_path = PARTICLE_DA
         for dataset in datasets[GeV]:
 
             entry_strat = dataset.get("entries",None) or entries
-            dataset_path = dataset["path"]
+            dataset_path = os.path.join("..",dataset["path"])
 
             with uproot.open(dataset_path) as root:
 
@@ -85,10 +84,16 @@ def create_particle_dataset(datasets : dict = DATASETS,folder_path = PARTICLE_DA
     fd_test.close()
 
 
-def create_particles_via_labels():
+def create_particles_via_labels(keys = [1]):
 
     for GeV in DATASETS.keys():
-        folder_path = os.path.join(PARTICLE_DATASET_FOLDER,str(GeV))
-        create_or_cleanup(folder_path)
+        if GeV in keys:
+            folder_path = os.path.join(PARTICLE_DATASET_FOLDER,str(GeV))
+            create_or_cleanup(folder_path)
 
-        create_particle_dataset(folder_path=folder_path,datasets={GeV:DATASETS[GeV]})
+            create_particle_dataset(folder_path=folder_path,datasets={GeV:DATASETS[GeV]})
+
+
+if __name__ == "__main__":
+
+    create_particles_via_labels([1])
