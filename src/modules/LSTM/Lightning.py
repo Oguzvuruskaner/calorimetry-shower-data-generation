@@ -24,30 +24,26 @@ class LSTMLightning(LightningModule):
 
     def training_step(self, batch, batch_idx):
 
-        jet = batch.view(-1,4)
+        jet = batch.view(len(batch),-1,1,4)
 
         state = torch.zeros((1,1,self.state_size)).to(self.device)
         prev_particle = torch.zeros((1,1,4)).to(self.device)
         z = torch.randn((1,1,self.latent_size)).to(self.device)
         loss = 0
 
-        for ind,target in enumerate(jet) :
+        for target in jet :
 
-            if ind < 40:
+            state,tmp,z = self.model(state.detach(),prev_particle.detach(),z.detach())
+            loss += self.criterion(tmp,target)
+            prev_particle = tmp
 
-                state,tmp,z = self.model(state.detach(),prev_particle.detach(),z.detach())
-                loss += self.criterion(tmp,target)
-                prev_particle = tmp
-
-            else:
-                break
 
         self.log("train_loss",loss.item())
         return loss
 
     def configure_optimizers(self):
-        optimizer = O.Adam(self.parameters(),lr=self.lr)
-        lr_scheduler = O.lr_scheduler.ReduceLROnPlateau(optimizer,factor=.1,patience=3,verbose=True)
+        optimizer = O.SGD(self.parameters(),lr=self.lr)
+        lr_scheduler = O.lr_scheduler.ReduceLROnPlateau(optimizer,threshold=10e-8,factor=.1,cooldown=5,patience=10,verbose=True)
 
         return {
             "optimizer":optimizer,

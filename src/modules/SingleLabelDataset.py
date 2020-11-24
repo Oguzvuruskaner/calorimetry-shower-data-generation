@@ -1,31 +1,30 @@
 from pytorch_lightning import LightningDataModule
 import os
 import tables
-import numpy as np
 
 from torch.utils.data import DataLoader,Dataset
-from random import choice
 import torch
+
 
 class JetDataset(Dataset):
 
-    def __init__(self,filepath:str,max_jet_size = 64):
+    def __init__(self,filepath:str,max_jet_size = 96):
 
         self._file = tables.open_file(filepath,mode="r")
+        self.max_jet_size = max_jet_size
+
         self.setup_data()
 
     def setup_data(self):
         data = self._file.root["data"]
-        self.data = torch.zeros((len(data),64,4))
+        self.data = torch.zeros((len(data),1, self.max_jet_size, 4))
 
-        for jet in data:
+        for ind,jet in enumerate(data):
             jet = jet.reshape(-1,4)
+            self.data[ind] = torch.from_numpy(jet[:self.max_jet_size])
 
-            self.data = jet[:64,:]
-
-
-    def __del__(self):
         self._file.close()
+
 
     def __len__(self):
         return len(self.data)
@@ -37,7 +36,7 @@ class JetDataset(Dataset):
 
 class SingleLabelDataset(LightningDataModule):
 
-    def __init__(self, dataset_label=1,batch_size=64, steps_per_epoch=300):
+    def __init__(self, dataset_label=1,batch_size=1024, steps_per_epoch=300):
 
         super().__init__()
         self.dataset_label = dataset_label
