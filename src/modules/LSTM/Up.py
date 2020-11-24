@@ -26,6 +26,7 @@ class Up(N.Module):
                 self.proxy(i),
                 N.Sequential(
                     N.ConvTranspose1d(16,16,4,2,1),
+                    N.BatchNorm1d(16),
                     N.LeakyReLU()
                 )
             )

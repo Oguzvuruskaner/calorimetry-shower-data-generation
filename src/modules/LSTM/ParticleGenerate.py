@@ -18,6 +18,7 @@ class ParticleGenerate(N.Module):
             N.Conv1d(3, 8, 5, 1, 2),
             N.LeakyReLU(),
             N.Conv1d(8, 16, 5, 1, 2),
+            N.BatchNorm1d(16),
             N.LeakyReLU(),
         )
 
@@ -28,6 +29,7 @@ class ParticleGenerate(N.Module):
                 self.proxy(ind),
                 N.Sequential(
                     N.Conv1d(16,16, 5, 1, 2),
+                    N.BatchNorm1d(16),
                     N.LeakyReLU()
                 )
             )

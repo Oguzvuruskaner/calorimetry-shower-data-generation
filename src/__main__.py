@@ -15,7 +15,7 @@ if __name__ == "__main__":
     LOG_DIR = os.path.join("..","logs","generathings")
 
     model = LSTMLightning()
-    datamodule = SingleLabelDataset(steps_per_epoch=300)
+    datamodule = SingleLabelDataset(steps_per_epoch=50)
     datamodule.setup()
 
     callbacks = [

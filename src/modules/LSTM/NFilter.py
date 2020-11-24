@@ -12,10 +12,13 @@ class NFilter(N.Module):
 
         self.model = N.Sequential(
             N.Conv1d(N_in, 16, 5, 1, 2),
+            N.BatchNorm1d(16),
             N.LeakyReLU(),
             N.Conv1d(16, 16, 5, 1, 2),
+            N.BatchNorm1d(16),
             N.LeakyReLU(),
             N.Conv1d(16, 16, 5, 1, 2),
+            N.BatchNorm1d(16),
             N.LeakyReLU(),
             N.Conv1d(16, N_out, 5, 1, 2),
             N.Sigmoid()
