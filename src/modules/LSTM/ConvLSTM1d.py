@@ -1,4 +1,5 @@
 import torch.nn as N
+import torch
 
 from src.modules.LSTM.Down import Down
 from src.modules.LSTM.ParticleGenerate import ParticleGenerate
@@ -24,6 +25,24 @@ class ConvLSTM1d(N.Module):
 
         self.particle_generate = ParticleGenerate()
 
+
+    def generate(self,n = 45,device=torch.cuda.current_device()):
+
+        self.eval()
+        z = torch.randn((1,1,self.latent_size)).to(device)
+        state = torch.zeros((1,1,self.latent_size)).to(device)
+        particle = torch.zeros((1,1,4)).to(device)
+
+        particles = torch.zeros((n,4))
+
+        for i in range(n):
+
+            state,particle,_ = self(state,particle,z)
+            particles[i] = particle.squeeze().cpu()
+
+        self.train()
+
+        return particles
 
     def forward(self,state,particle,z):
 

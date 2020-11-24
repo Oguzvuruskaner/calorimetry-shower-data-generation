@@ -1,5 +1,5 @@
 from pytorch_lightning.callbacks import Callback
-
+import os
 
 class LogGenerathings(Callback):
 
@@ -10,7 +10,10 @@ class LogGenerathings(Callback):
         self.particle_limit = particle_limit
         self.log_dir = log_dir
 
-    def on_epoch_end(self, trainer, pl_module):
+    def on_epoch_end(self, trainer, pl_module,*args,**kwargs):
 
-
-        c = 3
+        current_epoch = trainer.current_epoch
+        with open(os.path.join(self.log_dir,"epoch_{}.txt".format(current_epoch)),"w") as fp:
+            particles = pl_module.model.generate(self.particle_limit)
+            for particle in particles:
+                fp.write("{},{},{},{}\n".format(*particle))

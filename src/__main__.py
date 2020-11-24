@@ -12,10 +12,10 @@ import os
 if __name__ == "__main__":
 
 
-    LOG_DIR = os.path.join("logs","generathings")
+    LOG_DIR = os.path.join("..","logs","generathings")
 
     model = LSTMLightning()
-    datamodule = SingleLabelDataset()
+    datamodule = SingleLabelDataset(steps_per_epoch=1)
     datamodule.setup()
     callbacks = [
         ModelCheckpoint(os.path.join("..","models","lstm"),monitor="train_loss",save_top_k=3,mode="min"),
@@ -27,7 +27,7 @@ if __name__ == "__main__":
         TensorBoardLogger(os.path.join("..","logs","lstm")),
     ]
 
-    trainer = Trainer(logger=loggers,gpus=1,auto_select_gpus=True)
+    trainer = Trainer(logger=loggers,gpus=1,callbacks=callbacks,auto_select_gpus=True)
     trainer.fit(model,datamodule.train_dataloader())
 
 
