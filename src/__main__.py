@@ -15,8 +15,9 @@ if __name__ == "__main__":
     LOG_DIR = os.path.join("..","logs","generathings")
 
     model = LSTMLightning()
-    datamodule = SingleLabelDataset(steps_per_epoch=1)
+    datamodule = SingleLabelDataset(steps_per_epoch=300)
     datamodule.setup()
+
     callbacks = [
         ModelCheckpoint(os.path.join("..","models","lstm"),monitor="train_loss",save_top_k=3,mode="min"),
         LearningRateMonitor(),

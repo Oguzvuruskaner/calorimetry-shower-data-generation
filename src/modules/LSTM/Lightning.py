@@ -47,4 +47,10 @@ class LSTMLightning(LightningModule):
 
     def configure_optimizers(self):
         optimizer = O.SGD(self.parameters(),lr=self.lr)
-        return optimizer
+        lr_scheduler = O.lr_scheduler.ReduceLROnPlateau(optimizer,factor=.1,patience=3)
+
+        return {
+            "optimizer":optimizer,
+            "monitor":"train_loss",
+            "lr_scheduler":lr_scheduler
+        }
