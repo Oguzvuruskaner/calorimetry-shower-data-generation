@@ -13,7 +13,8 @@ class LogGenerathings(Callback):
     def on_epoch_end(self, trainer, pl_module,*args,**kwargs):
 
         current_epoch = trainer.current_epoch
-        with open(os.path.join(self.log_dir,"epoch_{}.txt".format(current_epoch)),"w") as fp:
+        with open(os.path.join(self.log_dir,"epoch_{}.csv".format(current_epoch)),"w") as fp:
+            fp.write("x,y,z,e\n")
             particles = pl_module.model.generate(self.particle_limit)
             for particle in particles:
                 fp.write("{},{},{},{}\n".format(*particle))
