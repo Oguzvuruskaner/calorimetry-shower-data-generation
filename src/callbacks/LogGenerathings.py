@@ -17,4 +17,4 @@ class LogGenerathings(Callback):
             fp.write("x,y,z,e\n")
             particles = pl_module.generate(self.particle_limit)
             for particle in particles:
-                fp.write("{},{},{},{}\n".format(*particle))
+                fp.write("{:4f},{:4f},{:4f},{:4f}\n".format(*particle))

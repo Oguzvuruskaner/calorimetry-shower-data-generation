@@ -98,7 +98,7 @@ class GANLightning(LightningModule):
 
 
     def configure_optimizers(self):
-        disc_optimizer = AdaBound([
+        disc_optimizer = O.SGD([
             {
                 "params":self.discriminator.parameters(),
             },
@@ -108,7 +108,7 @@ class GANLightning(LightningModule):
         ],lr=self.disc_lr)
         disc_lr_scheduler = O.lr_scheduler.ReduceLROnPlateau(disc_optimizer,threshold=10e-8,factor=.1,cooldown=5,patience=10,verbose=True)
 
-        gen_optimizer = AdaBound([
+        gen_optimizer = O.SGD([
                 {
                     "params":self.generator.parameters(),
                 },
@@ -128,7 +128,7 @@ class GANLightning(LightningModule):
             },
             {
                 "scheduler": gen_lr_scheduler,
-                "monitor": "gen_train_loss",
+                "monitor": "gen_loss",
                 "interval": "epoch"
             },
 
