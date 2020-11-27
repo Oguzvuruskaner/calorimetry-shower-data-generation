@@ -48,19 +48,21 @@ class JetDataset(Dataset):
 
 class DataModule(LightningDataModule):
 
-    def __init__(self,root_dir, dataset_label=1,batch_size=1, steps_per_epoch=300):
+    def __init__(self,root_dir,  steps_per_epoch=32,max_jet_size = 1500):
 
         super().__init__()
-        self.dataset_label = dataset_label
         self.root_dir = root_dir
         self.train_data = None
         self.steps_per_epoch = steps_per_epoch
-        self.batch_size = batch_size
+        self.max_jet_size = max_jet_size
 
 
     def setup(self,*args, **kwargs):
-        self.train_data = JetDataset(os.path.join(self.root_dir,"all.h5"))
+        self.train_data = JetDataset(
+            os.path.join(self.root_dir,"all.h5"),
+            max_jet_size=self.max_jet_size,
+            steps_per_epoch=self.steps_per_epoch)
 
     def train_dataloader(self, *args, **kwargs) -> DataLoader:
-        return DataLoader(self.train_data,batch_size=self.batch_size,shuffle=True)
+        return DataLoader(self.train_data,batch_size=1,shuffle=True)
 

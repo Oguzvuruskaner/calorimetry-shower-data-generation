@@ -19,8 +19,8 @@ class GANLightning(LightningModule):
 
         super().__init__()
 
-        self.disc_lr = kwargs.get("disc_lr",2*10e-4)
-        self.gen_lr = kwargs.get("gen_lr",10e-5)
+        self.disc_lr = kwargs.get("disc_lr",10e-3)
+        self.gen_lr = kwargs.get("gen_lr",10e-4)
         self.latent_size = kwargs.get("latent_size",128)
         self.max_particle = kwargs.get("max_particle",1500)
 
@@ -133,3 +133,24 @@ class GANLightning(LightningModule):
             },
 
         ]
+
+
+    def generate(self,particle_limit = None):
+
+
+        limit = particle_limit or self.max_particle
+
+
+        particles = torch.zeros((self.limit,4))
+
+        state = torch.zeros((1, 1, self.latent_size)).to(self.device)
+
+        for i in range(limit):
+            latent = torch.randn((1, 1, self.latent_size)).to(self.device)
+
+            particle = self.generator(state, latent)
+            state = self.state(state, particle)
+
+            particles[i] = particle.squeeze()
+
+        return particles
