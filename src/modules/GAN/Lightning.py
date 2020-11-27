@@ -141,7 +141,7 @@ class GANLightning(LightningModule):
         limit = particle_limit or self.max_particle
 
 
-        particles = torch.zeros((self.limit,4))
+        particles = torch.zeros((limit,4))
 
         state = torch.zeros((1, 1, self.latent_size)).to(self.device)
 
