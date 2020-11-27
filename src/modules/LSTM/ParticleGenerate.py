@@ -3,7 +3,7 @@ import torch
 
 
 from src.helpers.AttrProxy import AttrProxy
-from src.modules.LSTM.ParticleHead import ParticleHead
+from src.modules.helpers.ParticleHead import ParticleHead
 
 
 class ParticleGenerate(N.Module):

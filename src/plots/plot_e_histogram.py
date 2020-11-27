@@ -4,6 +4,9 @@ import os
 
 if __name__ == "__main__":
 
+
+
+
     csv_path = os.path.join("..","..","logs","generathings","epoch_322.csv")
     plot_path = os.path.join("..","plot2.png")
 

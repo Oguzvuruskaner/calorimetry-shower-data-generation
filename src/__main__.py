@@ -13,9 +13,12 @@ if __name__ == "__main__":
 
 
     LOG_DIR = os.path.join("..","logs","generathings")
+    STEPS_PER_EPOCH = 50
+    BATCH_SIZE = 128
+
 
     model = LSTMLightning()
-    datamodule = SingleLabelDataset()
+    datamodule = SingleLabelDataset(steps_per_epoch=STEPS_PER_EPOCH,batch_size=BATCH_SIZE)
     datamodule.setup()
 
     callbacks = [

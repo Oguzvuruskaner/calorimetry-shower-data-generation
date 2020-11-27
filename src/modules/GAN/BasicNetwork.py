@@ -1,11 +1,12 @@
 import torch.nn as N
+from torch.nn.functional import dropout
 
 from src.helpers.AttrProxy import AttrProxy
 from src.modules.helpers.DropoutModule import DropoutModule
 from src.modules.helpers.MaxWidth import MaxWidth
 
 
-class Up(N.Module,DropoutModule,MaxWidth):
+class BasicNetwork(N.Module,DropoutModule,MaxWidth):
 
     def __init__(self,*args,**kwargs):
 
@@ -23,27 +24,6 @@ class Up(N.Module,DropoutModule,MaxWidth):
 
         self.proxy = AttrProxy(self,"l_")
 
-        self.input = N.Sequential(
-            N.Conv1d(1, self.root_filter//2, 5, 1, 2),
-            N.LeakyReLU(),
-            N.Conv1d(self.root_filter//2, self.root_filter, 5, 1, 2),
-            N.LeakyReLU()
-        )
-
-        for i in range(self.depth):
-            self.add_module(
-                self.proxy(i),
-                N.Sequential(
-                    N.ConvTranspose1d(self.get_width(self.root_filter*2**i),self.get_width(self.root_filter*2**(i+1)),4,2,1),
-                    N.LeakyReLU()
-                )
-            )
-
-        self.out = N.Sequential(
-            N.Conv1d(self.get_width(self.root_filter*2**self.depth),1,5,1,2),
-            N.LeakyReLU()
-        )
-
 
 
     def forward(self,x):
@@ -53,7 +33,19 @@ class Up(N.Module,DropoutModule,MaxWidth):
 
         for ind in range(self.depth):
 
+            x = dropout(
+                x,
+                p = self.dropout_rate * ind/self.depth,
+                training=self.training
+            )
+
             module = self.proxy[ind]
-            x = module(x)
+
+            x = dropout(
+                module(x),
+                p=self.dropout_rate * ind / self.depth,
+                training=self.training
+            )
+
 
         return self.out(x)

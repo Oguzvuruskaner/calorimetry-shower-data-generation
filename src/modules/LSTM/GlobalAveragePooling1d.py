@@ -5,4 +5,4 @@ class GlobalAveragePooling1d(N.Module):
 
     def forward(self,x):
 
-        return x.mean(dim = 1)
+        return x.mean(dim = 2)

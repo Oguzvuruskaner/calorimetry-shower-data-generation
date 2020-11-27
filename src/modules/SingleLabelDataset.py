@@ -2,6 +2,8 @@ from pytorch_lightning import LightningDataModule
 import os
 import tables
 
+from random import choice
+
 from torch.utils.data import DataLoader,Dataset
 import torch
 
@@ -34,9 +36,24 @@ class JetDataset(Dataset):
         return self.data[item]
 
 
+class StepsPerEpochAdjustableDataset(JetDataset):
+
+    def __init__(self,filepath:str,max_jet_size = 96,steps_per_epoch = 50,batch_size=64):
+        super().__init__(filepath=filepath,max_jet_size=max_jet_size)
+        self.steps_per_epoch = steps_per_epoch
+        self.batch_size = batch_size
+
+
+    def __len__(self):
+        return self.batch_size * self.steps_per_epoch
+
+    def __getitem__(self, item):
+        return choice(self.data)
+
+
 class SingleLabelDataset(LightningDataModule):
 
-    def __init__(self, dataset_label=1,batch_size=1024, steps_per_epoch=300):
+    def __init__(self, dataset_label=1,batch_size=64, steps_per_epoch=300):
 
         super().__init__()
         self.dataset_label = dataset_label
@@ -47,7 +64,11 @@ class SingleLabelDataset(LightningDataModule):
 
 
     def setup(self):
-        self.train_data = JetDataset(os.path.join(self.root_dir,"all.h5"))
+        self.train_data = StepsPerEpochAdjustableDataset(
+            os.path.join(self.root_dir,"all.h5"),
+            steps_per_epoch=self.steps_per_epoch,
+            batch_size=self.batch_size
+        )
 
     def train_dataloader(self, *args, **kwargs) -> DataLoader:
         return DataLoader(self.train_data,batch_size=self.batch_size,shuffle=True)

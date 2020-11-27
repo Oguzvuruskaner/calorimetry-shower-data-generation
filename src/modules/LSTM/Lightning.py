@@ -4,6 +4,8 @@ import torch
 import torch.nn as N
 import torch.optim as O
 
+from adabound import AdaBound
+
 from src.modules.LSTM.ConvLSTM1d import ConvLSTM1d
 
 
@@ -24,16 +26,16 @@ class LSTMLightning(LightningModule):
 
     def training_step(self, batch, batch_idx):
 
-        jet = batch.view(len(batch),-1,1,4)
+        jet = batch.view(-1,len(batch),1,4)
 
-        state = torch.zeros((1,1,self.state_size)).to(self.device)
-        prev_particle = torch.zeros((1,1,4)).to(self.device)
-        z = torch.randn((1,1,self.latent_size)).to(self.device)
+        state = torch.zeros((len(batch),1,self.state_size),requires_grad=False).to(self.device)
+        prev_particle = torch.zeros((len(batch),1,4)).to(self.device)
+        z = torch.randn((len(batch),1,self.latent_size),requires_grad=False).to(self.device)
         loss = 0
 
         for target in jet :
 
-            state,tmp,z = self.model(state.detach(),prev_particle.detach(),z.detach())
+            state,tmp,z = self.model(state,prev_particle.detach(),z)
             loss += self.criterion(tmp,target)
             prev_particle = tmp
 
@@ -42,7 +44,7 @@ class LSTMLightning(LightningModule):
         return loss
 
     def configure_optimizers(self):
-        optimizer = O.SGD(self.parameters(),lr=self.lr)
+        optimizer = AdaBound(self.parameters(),lr=self.lr)
         lr_scheduler = O.lr_scheduler.ReduceLROnPlateau(optimizer,threshold=10e-8,factor=.1,cooldown=5,patience=10,verbose=True)
 
         return {
