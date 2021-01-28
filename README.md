@@ -1,2 +1,2 @@
-# Calorimetry Shower Synthetic Data Generation
+# Calorimetry Shower Sensor Data Generation
 
